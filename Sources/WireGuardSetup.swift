@@ -64,6 +64,11 @@ struct WireGuardSetup: Codable, Equatable {
         }
     }
 
+    /// Everyone the server lets in: the devices, and whoever scans the QR code next.
+    var serverPeers: [Peer] { peers + (ready.map { [$0] } ?? []) }
+
+    var serverPublicKey: Data { Self.publicKey(of: serverPrivateKey) }
+
     static func new() -> WireGuardSetup {
         WireGuardSetup(serverPrivateKey: Curve25519.KeyAgreement.PrivateKey().rawRepresentation, peers: [])
     }
