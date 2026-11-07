@@ -10,3 +10,6 @@ __pycache__/
 .build-sim/
 .build-sim.log
 WireGuard/build/
+
+# go build ./... in WireGuard/ makes this binary
+WireGuard/wireguard
