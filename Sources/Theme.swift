@@ -201,3 +201,31 @@ struct ConfirmSheet: View {
         .presentationBackground(Brand.card)
     }
 }
+
+/// Numbered steps, one line each: a small numbered circle, then the step.
+struct Steps: View {
+    let steps: [LocalizedStringKey]
+    /// An identifier for the first step, for the UI tests.
+    var firstID: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
+                HStack(spacing: 10) {
+                    Text(verbatim: "\(index + 1)")
+                        .font(.footnote.weight(.bold))
+                        .foregroundStyle(Brand.accent)
+                        .frame(width: 24, height: 24)
+                        .background(Brand.actionTint, in: Circle())
+                        .accessibilityHidden(true)
+                    Text(step)
+                        .font(.subheadline)
+                        .foregroundStyle(Brand.subtext)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .accessibilityIdentifier(index == 0 ? (firstID ?? "") : "")
+                }
+            }
+        }
+    }
+}

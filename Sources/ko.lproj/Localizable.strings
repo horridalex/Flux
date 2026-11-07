@@ -133,8 +133,15 @@
 "For a Mac or a travel router" = "Mac·라우터용";
 "Send the file to it, by AirDrop say. On a Mac, import it in WireGuard; on a router, add it as a WireGuard client and turn its VPN on." = "AirDrop 등으로 파일을 보내세요. Mac은 WireGuard 앱에서 가져오고, 라우터는 VPN 설정에서 WireGuard 클라이언트로 추가한 뒤 VPN을 켜면 돼요.";
 "Cancel" = "닫기";
-"In WireGuard, tap + > Create from QR code" = "WireGuard 앱에서 + > QR 코드로부터 생성";
-"Import it in WireGuard" = "WireGuard 앱에서 가져오세요";
+"In WireGuard, tap + > Create from QR code" = "WireGuard 앱에서 + > QR 코드로 생성";
+"Import it in WireGuard" = "WireGuard 앱에서 파일 가져오기";
 "Start over with new keys?" = "새 키로 다시 시작할까요?";
 "Every device has to be added again, with a new QR code or file." = "연결한 기기를 모두 새 QR 코드나 파일로 다시 추가해야 해요.";
 "Start over" = "다시 시작";
+"Scan this code" = "이 코드를 스캔";
+"Send it to the device, by AirDrop say" = "AirDrop 등으로 기기에 파일 보내기";
+"Turn on by itself" = "자동으로 켜고 끄기";
+"On the hotspot only" = "이 핫스팟에서만 켜져요";
+"In WireGuard, edit the tunnel > On-Demand" = "WireGuard 앱에서 터널 편집 > On-Demand 켜기";
+"Under Wi-Fi, pick only this iPhone's hotspot" = "Wi-Fi에서 이 iPhone 핫스팟 이름만 선택";
+"Elsewhere it turns itself off" = "다른 Wi-Fi에서는 자동으로 꺼져요";

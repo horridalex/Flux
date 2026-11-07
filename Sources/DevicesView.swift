@@ -67,18 +67,12 @@ struct AddDeviceSheet: View {
                                     .accessibilityLabel("QR code for the next device")
                                     .accessibilityIdentifier("add.qr")
                             }
-                            Text("In WireGuard, tap + > Create from QR code")
-                                .font(.subheadline)
-                                .foregroundStyle(Brand.subtext)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
-                                .accessibilityIdentifier("add.steps")
+                            Steps(steps: ["In WireGuard, tap + > Create from QR code",
+                                          "Scan this code"], firstID: "add.steps")
                         }
                         Tile(title: "With a file", subtitle: "For a Mac or a travel router") {
-                            Text("Import it in WireGuard")
-                                .font(.subheadline)
-                                .foregroundStyle(Brand.subtext)
-                                .lineLimit(1)
+                            Steps(steps: ["Send it to the device, by AirDrop say",
+                                          "Import it in WireGuard"])
                             if let file = code.file {
                                 ShareLink(item: file) {
                                     Label("Share as a file, for a Mac or a router", systemImage: "square.and.arrow.up")
@@ -86,6 +80,12 @@ struct AddDeviceSheet: View {
                                 .buttonStyle(ActionButtonStyle(fullWidth: true))
                                 .accessibilityIdentifier("add.share")
                             }
+                        }
+                        // The tunnel turns itself on at this hotspot and off everywhere else.
+                        Tile(title: "Turn on by itself", subtitle: "On the hotspot only") {
+                            Steps(steps: ["In WireGuard, edit the tunnel > On-Demand",
+                                          "Under Wi-Fi, pick only this iPhone's hotspot",
+                                          "Elsewhere it turns itself off"])
                         }
                     }
                     .padding(12)
