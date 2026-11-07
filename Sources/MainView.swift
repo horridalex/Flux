@@ -288,7 +288,7 @@ struct StatusCard: View {
                     // The tint fails contrast on the orange card, so the text is the label colour and the underline
                     // says "tap". Color.primary, because inside a button `.primary` is the button's tint.
                     Text("Settings > Personal Hotspot > Allow Others to Join")
-                        .font(.subheadline)
+                        .font(.subheadline.weight(.semibold))
                         .underline()
                         .multilineTextAlignment(.center)
                         .foregroundStyle(Color.primary)

@@ -16,8 +16,10 @@ enum Brand {
 }
 
 /// Behind every screen. `flowing` moves it, while Flux shares, unless Reduce Motion is on.
+/// `calm` veils it more, for a List, whose headers and footers sit on it with no glass between.
 struct AuroraBackground: View {
     var flowing: Bool
+    var calm = false
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -50,6 +52,9 @@ struct AuroraBackground: View {
                 LinearGradient(colors: [palette[0], palette[4], palette[8]], startPoint: .topLeading, endPoint: .bottomTrailing)
             }
         }
+        // A veil of the system background, so secondary text on glass keeps its contrast where the
+        // aurora is brightest. The accessibility audit's contrast test fails without it.
+        .overlay(Color(uiColor: .systemBackground).opacity(calm ? 0.55 : (scheme == .dark ? 0.3 : 0.4)))
         .ignoresSafeArea()
         .accessibilityHidden(true)
     }
@@ -92,7 +97,7 @@ extension View {
     func auroraList(flowing: Bool = false) -> some View {
         self
             .scrollContentBackground(.hidden)
-            .background(AuroraBackground(flowing: flowing))
+            .background(AuroraBackground(flowing: flowing, calm: true))
     }
 }
 
@@ -108,7 +113,7 @@ struct Tile<Content: View>: View {
                 Text(title)
                     .font(.caption.weight(.semibold))
                     .textCase(.uppercase)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.primary.opacity(0.75)) // .secondary is too faint on glass
                     .accessibilityAddTraits(.isHeader)
             }
             content

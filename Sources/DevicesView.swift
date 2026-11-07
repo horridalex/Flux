@@ -52,7 +52,8 @@ struct WireGuardProblemSection: View {
                     .accessibilityIdentifier("wireguard.problem")
                 if model.wireGuardNeedsReset {
                     Button("Start over with new keys", role: .destructive) { model.resetWireGuard() }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(.borderedProminent) // white on red: red text fails on the orange glass
+                        .tint(.red)
                         .accessibilityIdentifier("wireguard.reset")
                 }
             }
