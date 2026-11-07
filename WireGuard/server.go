@@ -47,6 +47,10 @@ const MTU = 1420
 // packet is dropped, like on a real network card.
 const queueLen = 1024
 
+// tunBatch is how many packets for the devices wireguard-go takes from the stack at once. It
+// encrypts and sends a batch in one go, which costs less per packet than one at a time.
+const tunBatch = 64
+
 const (
 	dialTimeout = 10 * time.Second
 	udpIdle     = 60 * time.Second
@@ -672,10 +676,16 @@ func (s *Server) forwardTCP(r *tcp.ForwarderRequest) {
 	closeBoth()
 }
 
+// copyBufs holds the 64 KB buffers copy uses, so a page that opens dozens of connections
+// doesn't make and drop a pair of them for each one.
+var copyBufs = sync.Pool{New: func() any { b := make([]byte, 65536); return &b }}
+
 // copy moves one direction of a TCP connection and counts it, until an error. A clean end
 // returns io.EOF.
 func (s *Server) copy(dst io.Writer, src io.Reader, device netip.Addr, up bool) error {
-	buf := make([]byte, 65536)
+	pooled := copyBufs.Get().(*[]byte)
+	defer copyBufs.Put(pooled)
+	buf := *pooled
 	for {
 		n, err := src.Read(buf)
 		if n > 0 {
@@ -718,7 +728,7 @@ func (t *stackTun) File() *os.File           { return nil }
 func (t *stackTun) Name() (string, error)    { return "flux", nil }
 func (t *stackTun) MTU() (int, error)        { return MTU, nil }
 func (t *stackTun) Events() <-chan tun.Event { return t.events }
-func (t *stackTun) BatchSize() int           { return 1 }
+func (t *stackTun) BatchSize() int           { return tunBatch }
 
 // Close also closes events, which ends wireguard-go's goroutine that reads them.
 func (t *stackTun) Close() error {
@@ -726,22 +736,39 @@ func (t *stackTun) Close() error {
 	return nil
 }
 
-// Read hands wireguard-go the next packet the stack sends to a device.
+// Read hands wireguard-go the packets the stack sends to the devices: it waits for one, then
+// takes whatever else is already waiting, up to a batch.
 func (t *stackTun) Read(bufs [][]byte, sizes []int, offset int) (int, error) {
-	for {
+	n := 0
+	for n == 0 {
 		select {
 		case v := <-t.incoming:
-			n, _ := v.Read(bufs[0][offset:])
-			v.Release()
-			if n == 0 {
-				continue // any error but ErrClosed would make wireguard-go shut the device down
-			}
-			sizes[0] = n
-			return 1, nil
+			n = t.take(v, bufs, sizes, offset, n)
 		case <-t.done:
 			return 0, os.ErrClosed
 		}
 	}
+	for n < len(bufs) {
+		select {
+		case v := <-t.incoming:
+			n = t.take(v, bufs, sizes, offset, n)
+		default:
+			return n, nil
+		}
+	}
+	return n, nil
+}
+
+// take copies a packet into bufs[n] and returns how many bufs are filled. An empty packet is
+// skipped: any error but ErrClosed would make wireguard-go shut the device down.
+func (t *stackTun) take(v *buffer.View, bufs [][]byte, sizes []int, offset, n int) int {
+	size, _ := v.Read(bufs[n][offset:])
+	v.Release()
+	if size == 0 {
+		return n
+	}
+	sizes[n] = size
+	return n + 1
 }
 
 // Write gives the stack the packets wireguard-go decrypted.

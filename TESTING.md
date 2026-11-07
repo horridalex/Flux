@@ -22,6 +22,12 @@ The WireGuard server has its own Go tests:
 go -C WireGuard test -race ./...
 ```
 
+Benchmarks move 16 MB down and up through a real client and the server, on one CPU so that saved work shows (`WireGuard/bench_test.go`). Compare two runs with `benchstat`:
+
+```sh
+go -C WireGuard test -run '^$' -bench . -cpu 1 -benchtime 15x -count 8 ./... > new.txt
+```
+
 CI also fuzzes the UDP replies for 30 s and checks for known vulnerabilities. Locally:
 
 ```sh
