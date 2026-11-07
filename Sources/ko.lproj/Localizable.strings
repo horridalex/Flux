@@ -132,3 +132,4 @@
 "With a file" = "파일로 연결";
 "For a Mac or a travel router" = "Mac이나 여행용 라우터는 이렇게 연결해요";
 "Send the file to it, by AirDrop say. On a Mac, import it in WireGuard; on a router, add it as a WireGuard client and turn its VPN on." = "AirDrop 등으로 파일을 보내세요. Mac은 WireGuard 앱에서 가져오고, 라우터는 VPN 설정에서 WireGuard 클라이언트로 추가한 뒤 VPN을 켜면 돼요.";
+"Cancel" = "취소";

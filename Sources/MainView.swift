@@ -299,8 +299,7 @@ struct StatusCard: View {
                     .frame(width: 10, height: 10)
                     .accessibilityHidden(true)
                 Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Brand.subtext)
+                    .font(.subheadline.weight(.semibold)) // the primary colour: grey failed on the orange card
                     .accessibilityIdentifier("status.title")
             }
             if sharing {

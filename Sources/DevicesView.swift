@@ -203,11 +203,15 @@ struct DeviceView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarRole(.editor)
         .onDisappear { code = nil } // the key doesn't stay on screen for the next visit
-        .confirmationDialog("Remove \(current.name)?", isPresented: $confirmRemove, titleVisibility: .visible) {
+        // An alert, not a confirmation dialog: on iOS 26 that's a popover with no Cancel button.
+        .alert("Remove \(current.name)?", isPresented: $confirmRemove) {
             Button("Remove", role: .destructive) {
                 model.removeWireGuardDevice(peer.id)
                 dismiss()
             }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("It can't connect any more. Delete its tunnel in its WireGuard app too.")
         }
     }
 
