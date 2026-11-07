@@ -79,9 +79,9 @@ final class Model: ObservableObject {
         self.wireGuardReady = wireGuardDevices.setup.ready
         self.wireGuardDNS = wireGuardDevices.setup.dnsServers
         #if DEBUG
-        let usage = demo == nil ? usageStore.load() : Usage(day: Usage.day(of: Date()))
+        let usage = demo == nil ? UsageStore().load() : Usage(day: Usage.day(of: Date()))
         #else
-        let usage = usageStore.load()
+        let usage = UsageStore().load()
         #endif
         self.usageToday = usage
         self.usageMeter = UsageMeter(today: usage)
