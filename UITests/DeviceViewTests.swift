@@ -83,7 +83,7 @@ final class DeviceViewTests: FluxUITestCase {
         let banner = staticText("wireguard.problem") // the warning icon carries the identifier too
         XCTAssertTrue(reveal(banner).exists)
         XCTAssertEqual(banner.label, lockedText)
-        XCTAssertTrue(app.staticTexts["WIREGUARD ISN'T RUNNING"].exists)
+        XCTAssertTrue(app.staticTexts["WireGuard isn't running"].exists)
         XCTAssertFalse(element("wireguard.reset").exists, "a locked Keychain gets better by unlocking, not by starting over")
         XCTAssertFalse(element("add.qr").exists)
         XCTAssertFalse(element("add.share").exists)
@@ -102,6 +102,6 @@ final class DeviceViewTests: FluxUITestCase {
         waitUntilGone(element("wireguard.problem"))
         XCTAssertFalse(element("wireguard.reset").exists)
         XCTAssertTrue(reveal(element("add.qr")).exists)
-        XCTAssertTrue(app.staticTexts["ADD A DEVICE"].exists, "no device yet after starting over")
+        XCTAssertTrue(app.staticTexts["Add a device"].exists, "no device yet after starting over")
     }
 }

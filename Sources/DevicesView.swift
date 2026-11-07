@@ -27,9 +27,12 @@ struct AddDeviceSection: View {
                 if let file = code.file {
                     ShareLink(item: file) {
                         Label("Share as a file, for a Mac or a router", systemImage: "square.and.arrow.up")
+                            .font(.subheadline.weight(.semibold))
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .tint(Brand.accent)
                     .accessibilityIdentifier("add.share")
                 }
                 Text("Install WireGuard on it, tap + > Create from QR code and scan this. Then edit the tunnel and turn On-Demand on for this iPhone's hotspot only. A travel router imports the file and turns its VPN on.")
@@ -129,7 +132,6 @@ struct DeviceView: View {
                 Text("It can't connect any more. Delete its tunnel in its WireGuard app too.")
             }
         }
-        .auroraList(flowing: model.sharing)
         .navigationTitle(Binding(get: { current.name }, set: { model.renameWireGuardDevice(peer.id, to: $0) }))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarRole(.editor)
@@ -274,7 +276,6 @@ struct DNSView: View {
                 }
             }
         }
-        .auroraList(flowing: model.sharing)
         .navigationTitle("DNS")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {

@@ -107,7 +107,7 @@ WireGuard/                   the WireGuard server in Go: wireguard-go plus a gVi
 scripts/build-wireguard.sh   builds WireGuard/ into FluxWG.xcframework (xcodegen runs it)
 Sources/Model.swift          finds the hotspot, starts the server, samples traffic, feeds the screens
 Sources/MainView.swift       the main screen; DevicesView.swift has the QR code and the device screen
-Sources/Theme.swift          the aurora background and the glass tiles
+Sources/Theme.swift          the cards and the brand colours
 Sources/KeepAlive.swift      silent audio to stay alive in the background
 Sources/Shortcuts.swift      the Start Flux and Is Flux Sharing? actions for Shortcuts and Siri
 Sources/Usage.swift          today's usage, in all and by device

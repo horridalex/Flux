@@ -13,7 +13,7 @@ final class StatusCardTests: FluxUITestCase {
     func testWaitingHidesTheSharingSections() {
         launch(.waiting)
         XCTAssertFalse(element("traffic.speeds").exists)
-        XCTAssertFalse(app.staticTexts["DEVICES"].exists)
+        XCTAssertFalse(app.staticTexts["Devices"].exists)
         XCTAssertTrue(reveal(element("add.qr")).exists, "it leads with the code for a device")
     }
 

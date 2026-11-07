@@ -8,7 +8,7 @@ struct MainView: View {
             ScrollView {
                 // A bento grid of glass tiles: the status across the top, the numbers side by side,
                 // then the devices, the QR code for the next one, and the settings.
-                VStack(spacing: 12) {
+                VStack(spacing: 14) {
                     StatusCard(model: model)
 
                     if let warning = model.expiryWarning {
@@ -89,7 +89,7 @@ struct MainView: View {
                 .padding(16)
                 .animation(.smooth, value: model.sharing)
             }
-            .background(AuroraBackground(flowing: model.sharing))
+            .background(Brand.page)
             // The status card says what this screen is, so the root drops the big title. It's still set,
             // because the screens pushed from here use it for their back button.
             .navigationTitle("Flux")
@@ -134,6 +134,8 @@ struct UsageSummary: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(verbatim: Format.bytes(bytes.total))
                 .font(.title2.weight(.bold).monospacedDigit())
+                .contentTransition(.numericText())
+                .animation(.snappy, value: bytes.total)
             Text("\(Image(systemName: "arrow.down")) \(Format.bytes(bytes.down))  \(Image(systemName: "arrow.up")) \(Format.bytes(bytes.up))")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
@@ -166,13 +168,16 @@ struct SpeedRow: View {
     let up: Double
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("\(Image(systemName: "arrow.down")) \(Format.speed(down))")
                 .foregroundStyle(Direction.download)
             Text("\(Image(systemName: "arrow.up")) \(Format.speed(up))")
                 .foregroundStyle(Direction.upload)
         }
-        .font(.headline.monospacedDigit())
+        .font(.title3.weight(.bold).monospacedDigit())
+        .contentTransition(.numericText())
+        .animation(.snappy, value: down)
+        .animation(.snappy, value: up)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Download \(Format.speed(down)), upload \(Format.speed(up))")
         .accessibilityIdentifier("traffic.speeds")
@@ -200,15 +205,11 @@ struct UsageRow: View {
     }
 }
 
-/// Download and upload colours, the brand's cyan and violet, the same in every speed. Darker in
+/// Download and upload colours, the brand's blue and a violet, the same in every speed. Darker in
 /// light mode and lighter in dark mode, so both keep a 4.5:1 contrast on glass. Orange and red stay
 /// for warnings.
 enum Direction {
-    static let download = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.45, green: 0.88, blue: 1.00, alpha: 1)
-            : UIColor(red: 0.00, green: 0.38, blue: 0.68, alpha: 1)
-    })
+    static let download = Brand.accent
     static let upload = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.80, green: 0.68, blue: 1.00, alpha: 1)
@@ -224,11 +225,8 @@ struct StatusCard: View {
     private var tint: Color { model.sharing ? .green : .orange }
     private var sharing: Bool { model.sharing }
     /// Grows with the text size, like the title under it.
-    @ScaledMetric(relativeTo: .title) private var iconSize: CGFloat = 44
+    @ScaledMetric(relativeTo: .title) private var iconSize: CGFloat = 26
 
-    /// The glass takes a little of the brand's blue while sharing, and of orange, the warning
-    /// colour, while waiting.
-    private var glassTint: Color { sharing ? Brand.blue.opacity(0.25) : Color.orange.opacity(0.25) }
 
     /// Opens Settings at its main screen, where Personal Hotspot is near the top. Nothing goes
     /// straight to the Personal Hotspot page any more: on iOS 27, App-prefs:INTERNET_TETHERING and
@@ -251,56 +249,49 @@ struct StatusCard: View {
     }
 
     var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "water.waves")
-                .font(.system(size: iconSize, weight: .semibold))
-                .foregroundStyle(Brand.flow)
-                .symbolEffect(.variableColor.iterative, isActive: sharing)
-                .overlay(alignment: .bottomTrailing) {
-                    Circle()
-                        .fill(tint)
-                        .frame(width: 16, height: 16)
-                        .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 3))
-                        .offset(x: 6, y: 4)
-                }
-                .accessibilityHidden(true)
-            Text(title)
-                .font(.title.bold())
-                .multilineTextAlignment(.center)
-                .accessibilityIdentifier("status.title")
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(tint)
+                    .frame(width: 10, height: 10)
+                    .accessibilityHidden(true)
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .accessibilityIdentifier("status.title")
+                Spacer()
+                Image(systemName: "water.waves")
+                    .font(.system(size: iconSize, weight: .semibold))
+                    .foregroundStyle(Brand.accent)
+                    .symbolEffect(.variableColor.iterative, isActive: sharing)
+                    .accessibilityHidden(true)
+            }
             if sharing {
                 Text(headline)
-                    .font(.headline)
-                    .multilineTextAlignment(.center)
+                    .font(.title2.bold())
                     .accessibilityIdentifier("status.headline")
                 Text("To stop, turn off Personal Hotspot.")
                     .font(.subheadline)
-                    .multilineTextAlignment(.center)
                     .accessibilityIdentifier("status.stopHint")
             } else if model.running {
-                // The WireGuard section under the card says why, and what to do.
+                // The WireGuard card under this one says why, and what to do.
                 Text("Personal Hotspot is on, but WireGuard isn't running.")
-                    .font(.headline)
-                    .multilineTextAlignment(.center)
+                    .font(.title3.bold())
                     .accessibilityIdentifier("status.headline")
             } else {
                 Button(action: Self.openHotspotSettings) {
-                    // The tint fails contrast on the orange card, so the text is the label colour and the underline
-                    // says "tap". Color.primary, because inside a button `.primary` is the button's tint.
                     Text("Settings > Personal Hotspot > Allow Others to Join")
                         .font(.subheadline.weight(.semibold))
                         .underline()
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(Color.primary)
+                        .multilineTextAlignment(.leading)
+                        .foregroundStyle(Color.primary) // inside a button, .primary is the button's tint
                 }
                 .accessibilityIdentifier("status.hotspotPath")
                 .accessibilityHint("Opens Settings")
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
-        .padding(.horizontal)
-        .glassTile(cornerRadius: 28, tint: glassTint)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .card(tint: sharing ? nil : .orange)
         .animation(.smooth, value: sharing)
     }
 }

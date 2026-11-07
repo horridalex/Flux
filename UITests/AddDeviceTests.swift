@@ -11,21 +11,21 @@ final class AddDeviceTests: FluxUITestCase {
         let share = reveal(element("add.share"))
         XCTAssertTrue(share.label.contains("Share as a file, for a Mac or a router"), share.label)
         XCTAssertEqual(reveal(element("add.steps")).label, steps)
-        XCTAssertTrue(app.staticTexts["ADD A DEVICE"].exists)
-        XCTAssertFalse(app.staticTexts["ADD ANOTHER DEVICE"].exists)
+        XCTAssertTrue(app.staticTexts["Add a device"].exists)
+        XCTAssertFalse(app.staticTexts["Add another device"].exists)
     }
 
     func testTheQRCodeShowsWithTheHotspotOnButNoDevice() {
         launch(.noDevices)
         XCTAssertTrue(reveal(element("add.qr")).exists)
-        XCTAssertTrue(app.staticTexts["ADD A DEVICE"].exists)
+        XCTAssertTrue(app.staticTexts["Add a device"].exists)
     }
 
     func testOnceADeviceExistsTheHeaderSaysAddAnotherDevice() {
         launch(.sharing)
         XCTAssertTrue(reveal(element("add.qr")).exists, "the code stays for the next device")
-        XCTAssertTrue(app.staticTexts["ADD ANOTHER DEVICE"].exists)
-        XCTAssertFalse(app.staticTexts["ADD A DEVICE"].exists)
+        XCTAssertTrue(app.staticTexts["Add another device"].exists)
+        XCTAssertFalse(app.staticTexts["Add a device"].exists)
         XCTAssertTrue(reveal(element("add.share")).exists)
         XCTAssertTrue(reveal(element("add.steps")).exists)
     }
