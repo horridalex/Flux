@@ -102,3 +102,6 @@
 "Flux has shared %@ this month, over your limit of %@." = "이번 달 Flux로 %@를 공유해서 한도 %@를 넘었습니다.";
 "%lld percent of this month's data used" = "이번 달 데이터의 %lld%%를 썼습니다";
 "Flux has shared %@ of your %@ limit this month." = "이번 달 한도 %2$@ 중 %1$@를 Flux로 공유했습니다.";
+
+/* The Control Center button's intent, in the app too */
+"Wakes Flux, so it shares when a device joins Personal Hotspot." = "기기가 개인용 핫스팟에 연결되면 공유하도록 Flux를 깨웁니다.";

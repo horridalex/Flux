@@ -13,6 +13,8 @@
 //   WireGuardSetup.swift  the hotspot address, WireGuard keys, devices and client configs, Foundation only
 //   WireGuardServer.swift  runs the WireGuard server (WireGuard/, Go)
 //   KeepAlive.swift, KeepAlivePolicy.swift  the silent sound that keeps Flux running
+//   LiveActivityController.swift  the Live Activity while sharing; Shared/ and Widgets/ have
+//                       its look and the Control Center button, in the widget extension
 //   Notices.swift       the notifications: going to sleep, and the monthly data limit
 //   UsageView.swift     the last 30 days, this month and the monthly limit
 
@@ -71,6 +73,9 @@ final class Model: ObservableObject {
     private var usageSavedAt = Date.distantPast
 
     private let wireGuard = WireGuardServer()
+    private let liveActivity = LiveActivityController()
+    /// The last reading in the background, where the sampler doesn't run, for the Live Activity's speeds.
+    private var backgroundSample: (totals: TrafficTotals, at: Date)?
     private let wireGuardDevices: WireGuardDevices
     private let keepAlive = KeepAlive()
     private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "flux", category: "flux")
@@ -168,6 +173,7 @@ final class Model: ObservableObject {
             append("hotspot address gone or changed, stopping")
             recordUsage(saving: true) // what the devices used since the last reading
             wireGuard.stop()
+            liveActivity.end()
             running = false
         }
         // A WireGuard start that failed (keys locked after a restart, say) is tried again here.
@@ -320,6 +326,7 @@ final class Model: ObservableObject {
             if upSpeed != 0 { upSpeed = 0 }
             if !deviceSpeeds.isEmpty { deviceSpeeds = [:] }
             if !wireGuardConnected.isEmpty { wireGuardConnected = [] }
+            liveActivity.end()
             return
         }
         let snap = wireGuard.snapshot()
@@ -341,6 +348,14 @@ final class Model: ObservableObject {
             speeds[address] = DeviceSpeed(from: before, to: totals, seconds: seconds)
         }
         if speeds != deviceSpeeds { deviceSpeeds = speeds }
+        showLiveActivity(down: downSpeed, up: upSpeed, onScreen: true, now: now)
+    }
+
+    /// The Live Activity says what's on screen here, see LiveActivityController.
+    private func showLiveActivity(down: Double, up: Double, onScreen: Bool, now: Date) {
+        guard sharing else { return liveActivity.end() }
+        liveActivity.show(.init(devices: wireGuard.connectedAddresses.count, down: down, up: up,
+                                today: usageToday.all.total), onScreen: onScreen, now: now)
     }
 
     /// A device that connected with the QR code is listed, and the code changes for the next one.
@@ -355,10 +370,25 @@ final class Model: ObservableObject {
     /// The watcher's check in the background, where the sampler doesn't run, so a device that
     /// connects then is listed too and the next one gets a new code.
     private func claimReadyInBackground() {
-        guard running else { return }
+        guard running else {
+            backgroundSample = nil
+            return
+        }
+        let now = Date()
         let snap = wireGuard.snapshot() // refreshes connectedAddresses
-        recordUsage(snap)
+        recordUsage(snap, now: now)
         claimReady(connected: wireGuard.connectedAddresses)
+        // The speed over the watcher's interval, for the Live Activity.
+        var down = 0.0, up = 0.0
+        if let last = backgroundSample {
+            let seconds = now.timeIntervalSince(last.at)
+            if seconds > 0 {
+                down = Self.bps(snap.bytesDown, last.totals.bytesDown, seconds)
+                up = Self.bps(snap.bytesUp, last.totals.bytesUp, seconds)
+            }
+        }
+        backgroundSample = (snap, now)
+        showLiveActivity(down: down, up: up, onScreen: false, now: now)
     }
 
     /// Adds what the devices used since the last reading to today's figures. `snap` is a
@@ -418,6 +448,7 @@ final class Model: ObservableObject {
         }
         observe(UIApplication.didBecomeActiveNotification) { model in
             model.sceneActive = true
+            model.backgroundSample = nil
             // Opening Flux starts the wait again, so there's time to turn on Personal Hotspot in Settings.
             model.wake()
             model.startSampler() // samples at once, then every second again
