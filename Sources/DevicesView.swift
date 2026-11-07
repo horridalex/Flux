@@ -78,6 +78,10 @@ struct DeviceView: View {
             Section {
                 ConnectedLabel(connected: connected)
                     .accessibilityIdentifier("device.status")
+                if connected {
+                    SpeedRow(down: model.deviceSpeeds[peer.address]?.down ?? 0, up: model.deviceSpeeds[peer.address]?.up ?? 0)
+                        .accessibilityIdentifier("device.speeds")
+                }
                 UsageRow(title: "Used today", bytes: model.usageToday.devices[peer.id.uuidString] ?? Usage.Bytes())
                     .accessibilityIdentifier("device.usage")
             } footer: {

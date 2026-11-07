@@ -71,16 +71,72 @@ final class UsageTests: XCTestCase {
         XCTAssertEqual(meter.today.all, Usage.Bytes(up: 1, down: 2), "what it used stays in all")
     }
 
-    func testTheStoreKeepsOnlyToday() {
-        let defaults = UserDefaults(suiteName: "UsageTests")!
-        defaults.removePersistentDomain(forName: "UsageTests")
+    private func freshDefaults(_ name: String) -> UserDefaults {
+        let defaults = UserDefaults(suiteName: name)!
+        defaults.removePersistentDomain(forName: name)
+        return defaults
+    }
+
+    func testTheStoreKeepsTheLast31Days() {
+        let store = UsageStore(defaults: freshDefaults("UsageTests.history"))
+        let now = date(30, 12)
+        XCTAssertEqual(store.load(now: now, calendar: calendar), Usage(day: "2026-11-30"))
+        for day in 1...30 {
+            store.save(Usage(day: Usage.day(of: date(day, 12), calendar: calendar), all: Usage.Bytes(up: 1, down: UInt64(day))),
+                       now: now, calendar: calendar)
+        }
+        // A day from the month before, outside the 31 days, goes.
+        store.save(Usage(day: "2026-10-01", all: Usage.Bytes(up: 9, down: 9)), now: now, calendar: calendar)
+        let days = store.history(now: now, calendar: calendar)
+        XCTAssertEqual(days.count, 30)
+        XCTAssertEqual(days.first?.day, "2026-11-01")
+        XCTAssertEqual(days.last?.day, "2026-11-30")
+        XCTAssertEqual(store.load(now: now, calendar: calendar).all, Usage.Bytes(up: 1, down: 30))
+        store.save(Usage(day: "2026-11-30", all: Usage.Bytes(up: 5, down: 50)), now: now, calendar: calendar)
+        XCTAssertEqual(store.history(now: now, calendar: calendar).count, 30, "saving a day again replaces it")
+        XCTAssertEqual(store.load(now: now, calendar: calendar).all, Usage.Bytes(up: 5, down: 50))
+    }
+
+    func testTodayFromTheOlderVersionIsKept() throws {
+        let defaults = freshDefaults("UsageTests.old")
+        let today = Usage(day: Usage.day(of: date(7, 12), calendar: calendar), all: Usage.Bytes(up: 3, down: 30))
+        defaults.set(try JSONEncoder().encode(today), forKey: "usage.today")
         let store = UsageStore(defaults: defaults)
-        let today = Usage.day(of: Date())
-        XCTAssertEqual(store.load(), Usage(day: today))
-        store.save(Usage(day: today, all: Usage.Bytes(up: 7, down: 70)))
-        XCTAssertEqual(store.load().all, Usage.Bytes(up: 7, down: 70))
-        store.save(Usage(day: "2000-01-01", all: Usage.Bytes(up: 7, down: 70)))
-        XCTAssertEqual(store.load(), Usage(day: today), "yesterday's figures don't carry over")
+        XCTAssertEqual(store.load(now: date(7, 13), calendar: calendar), today)
+        store.save(today, now: date(7, 13), calendar: calendar)
+        XCTAssertNil(defaults.data(forKey: "usage.today"), "moved over once")
+    }
+
+    func testTheMonthAddsUpItsOwnDaysAndTodayAsItIsNow() {
+        let days = [
+            Usage(day: "2026-10-31", all: Usage.Bytes(up: 100, down: 100)),
+            Usage(day: "2026-11-01", all: Usage.Bytes(up: 1, down: 10)),
+            Usage(day: "2026-11-06", all: Usage.Bytes(up: 2, down: 20)),
+            Usage(day: "2026-11-07", all: Usage.Bytes(up: 1, down: 1)), // saved a while ago
+        ]
+        let today = Usage(day: "2026-11-07", all: Usage.Bytes(up: 4, down: 40))
+        XCTAssertEqual(Usage.monthTotal(days, today: today), Usage.Bytes(up: 7, down: 70))
+    }
+
+    func testTheLimitWarnsAt80AndAt100OnceEach() {
+        let limit = UsageLimit(bytes: 1000)
+        XCTAssertNil(limit.warning(used: 799, given: 0))
+        XCTAssertEqual(limit.warning(used: 800, given: 0), 80)
+        XCTAssertNil(limit.warning(used: 900, given: 80))
+        XCTAssertEqual(limit.warning(used: 1000, given: 80), 100)
+        XCTAssertEqual(limit.warning(used: 1500, given: 0), 100, "straight past 80 says 100 only")
+        XCTAssertNil(limit.warning(used: 2000, given: 100))
+        XCTAssertNil(UsageLimit(bytes: 0).warning(used: 2000, given: 0), "no limit, no warning")
+    }
+
+    func testTheWarningsGivenStartAgainEachMonth() {
+        let store = UsageLimitStore(defaults: freshDefaults("UsageTests.limit"))
+        XCTAssertEqual(store.limit, UsageLimit(bytes: 0))
+        store.limit = UsageLimit(bytes: 50_000_000_000)
+        XCTAssertEqual(store.limit.bytes, 50_000_000_000)
+        store.setGiven(80, in: "2026-11")
+        XCTAssertEqual(store.given(in: "2026-11"), 80)
+        XCTAssertEqual(store.given(in: "2026-12"), 0)
     }
 
     func testTheDayIsTheLocalOne() {

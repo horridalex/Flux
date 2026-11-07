@@ -84,3 +84,21 @@
 /* The notification when Flux goes to sleep */
 "Flux is asleep" = "Flux가 잠들었습니다";
 "No device used the hotspot for 10 minutes, so Flux stopped to save battery. Open Flux or run Start Flux before you turn the hotspot on again." = "10분 동안 핫스팟을 쓰는 기기가 없어서 배터리를 아끼려고 멈췄습니다. 핫스팟을 다시 켜기 전에 Flux를 열거나 'Flux 시작'을 실행하세요.";
+
+/* Usage: this month, the last 30 days and the monthly limit */
+"This month %@" = "이번 달 %@";
+"This month %@ of %@" = "이번 달 %@ / %@";
+"Shows the last 30 days and the monthly limit" = "최근 30일 사용량과 월 한도를 보여줍니다";
+"Usage" = "사용량";
+"This month" = "이번 달";
+"of %@ this month" = "이번 달 한도 %@ 중";
+"Last 30 days" = "최근 30일";
+"Day" = "날짜";
+"Data" = "데이터";
+"Monthly limit" = "월 데이터 한도";
+"%lld GB" = "%lld GB";
+"Flux sends a notification at 80 and at 100 percent of the limit, once each a month. It only counts what Flux shared, not what the iPhone used itself." = "한도의 80%%와 100%%에 도달하면 한 달에 한 번씩 알림을 보냅니다. Flux로 공유한 데이터만 세고, iPhone 자체가 쓴 데이터는 포함하지 않습니다.";
+"Monthly data limit reached" = "월 데이터 한도에 도달했습니다";
+"Flux has shared %@ this month, over your limit of %@." = "이번 달 Flux로 %@를 공유해서 한도 %@를 넘었습니다.";
+"%lld percent of this month's data used" = "이번 달 데이터의 %lld%%를 썼습니다";
+"Flux has shared %@ of your %@ limit this month." = "이번 달 한도 %2$@ 중 %1$@를 Flux로 공유했습니다.";

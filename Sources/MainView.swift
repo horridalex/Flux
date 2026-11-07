@@ -26,17 +26,22 @@ struct MainView: View {
                     // Above the QR code, so a reason it doesn't work and the way out are both here.
                     WireGuardProblemSection(model: model)
 
-                    if model.sharing || model.usageToday.all.total > 0 {
+                    if model.sharing || model.usageThisMonth.total > 0 {
                         HStack(spacing: 12) {
                             if model.sharing {
                                 Tile(title: "Now") {
                                     SpeedRow(down: model.downSpeed, up: model.upSpeed)
                                 }
                             }
-                            Tile(title: "Used today") {
-                                UsageSummary(bytes: model.usageToday.all)
-                                    .accessibilityIdentifier("usage.today")
+                            // The tile opens the last 30 days and the monthly limit.
+                            NavigationLink { UsageView(model: model) } label: {
+                                Tile(title: "Used today") {
+                                    UsageSummary(bytes: model.usageToday.all, month: model.usageThisMonth.total,
+                                                 limit: model.usageLimit.bytes)
+                                }
                             }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("usage.today")
                         }
                         .fixedSize(horizontal: false, vertical: true) // both tiles as tall as the taller one
                     }
@@ -48,7 +53,13 @@ struct MainView: View {
                                     if index > 0 { Divider() }
                                     NavigationLink { DeviceView(model: model, peer: peer) } label: {
                                         TileRow {
-                                            Text(peer.name)
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(peer.name)
+                                                // While it moves data, how fast: who's using the hotspot most.
+                                                if let speed = model.deviceSpeeds[peer.address], speed.down + speed.up >= 1000 {
+                                                    DeviceSpeedText(speed: speed)
+                                                }
+                                            }
                                             Spacer()
                                             ConnectedLabel(connected: model.wireGuardConnected.contains(peer.address))
                                                 .font(.subheadline)
@@ -105,9 +116,19 @@ struct TileRow<Content: View>: View {
     }
 }
 
-/// Today's total, big, with the download and upload under it, for the main screen's tile.
+/// Today's total, big, with the download and upload under it, and this month's, for the main
+/// screen's tile.
 struct UsageSummary: View {
     let bytes: Usage.Bytes
+    /// This month so far, and the monthly limit, 0 for none.
+    let month: UInt64
+    let limit: UInt64
+
+    private var monthText: Text {
+        limit > 0
+            ? Text("This month \(Format.bytes(month)) of \(Format.bytes(limit))")
+            : Text("This month \(Format.bytes(month))")
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -116,10 +137,26 @@ struct UsageSummary: View {
             Text("\(Image(systemName: "arrow.down")) \(Format.bytes(bytes.down))  \(Image(systemName: "arrow.up")) \(Format.bytes(bytes.up))")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
+            monthText
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(limit > 0 && month >= limit ? Color.orange : Color.secondary)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Used today"))
         .accessibilityValue(Text("\(Format.bytes(bytes.total)), download \(Format.bytes(bytes.down)), upload \(Format.bytes(bytes.up))"))
+        .accessibilityHint(Text("Shows the last 30 days and the monthly limit"))
+    }
+}
+
+/// A device's speed now, small, under its name.
+struct DeviceSpeedText: View {
+    let speed: DeviceSpeed
+
+    var body: some View {
+        Text("\(Image(systemName: "arrow.down")) \(Format.speed(speed.down))  \(Image(systemName: "arrow.up")) \(Format.speed(speed.up))")
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.secondary)
+            .accessibilityLabel(Text("Download \(Format.speed(speed.down)), upload \(Format.speed(speed.up))"))
     }
 }
 
