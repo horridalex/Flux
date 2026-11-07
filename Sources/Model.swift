@@ -13,6 +13,7 @@
 //   WireGuardSetup.swift  the hotspot address, WireGuard keys, devices and client configs, Foundation only
 //   WireGuardServer.swift  runs the WireGuard server (WireGuard/, Go)
 //   KeepAlive.swift, KeepAlivePolicy.swift  the silent sound that keeps Flux running
+//   SleepNotice.swift   the notification when Flux goes to sleep
 
 import OSLog
 import SwiftUI
@@ -162,6 +163,7 @@ final class Model: ObservableObject {
         downSpeed = 0
         upSpeed = 0
         running = true
+        if sceneActive { SleepNotice.askOnce() } // see SleepNotice for why now
     }
 
     /// Plays the silent sound while the hotspot is on, and for a while after it goes, see
@@ -174,6 +176,7 @@ final class Model: ObservableObject {
         if plays { keepAlive.start() } else if keepAlive.playing {
             append("no hotspot for 10 minutes, letting iOS suspend Flux until it's opened")
             keepAlive.stop()
+            SleepNotice.post()
         }
     }
 
@@ -214,6 +217,7 @@ final class Model: ObservableObject {
         if demo != nil { return true }
         #endif
         if waitingSince != nil { waitingSince = Date() }
+        SleepNotice.clear()
         syncWithHotspot()
         return keepAlive.sounding
     }

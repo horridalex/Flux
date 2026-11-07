@@ -22,7 +22,7 @@ import (
 
 var loopback = netip.MustParseAddr("127.0.0.1")
 
-func keyPair(t *testing.T) (priv, pub [32]byte) {
+func keyPair(t testing.TB) (priv, pub [32]byte) {
 	rand.Read(priv[:])
 	priv[0] &= 248
 	priv[31] = priv[31]&127 | 64
@@ -34,7 +34,7 @@ func keyPair(t *testing.T) (priv, pub [32]byte) {
 	return
 }
 
-func (s *Server) port(t *testing.T) int {
+func (s *Server) port(t testing.TB) int {
 	status, _ := s.dev.IpcGet()
 	for _, line := range strings.Split(status, "\n") {
 		if v, ok := strings.CutPrefix(line, "listen_port="); ok {
@@ -53,12 +53,12 @@ type client struct {
 	dev *device.Device
 }
 
-func newClient(t *testing.T, s *Server, serverPub, priv [32]byte, addr netip.Addr) *client {
+func newClient(t testing.TB, s *Server, serverPub, priv [32]byte, addr netip.Addr) *client {
 	return newClientWithMTU(t, s, serverPub, priv, addr, MTU)
 }
 
 // newClientWithMTU is a device whose config has its own MTU, like one set up before the MTU changed.
-func newClientWithMTU(t *testing.T, s *Server, serverPub, priv [32]byte, addr netip.Addr, mtu int) *client {
+func newClientWithMTU(t testing.TB, s *Server, serverPub, priv [32]byte, addr netip.Addr, mtu int) *client {
 	tdev, tnet, err := netstack.CreateNetTUN([]netip.Addr{addr}, nil, mtu)
 	if err != nil {
 		t.Fatal(err)
@@ -77,10 +77,10 @@ func newClientWithMTU(t *testing.T, s *Server, serverPub, priv [32]byte, addr ne
 }
 
 // setup starts a server with one device and returns both.
-func setup(t *testing.T) (*Server, *client) { return setupWithMTU(t, MTU) }
+func setup(t testing.TB) (*Server, *client) { return setupWithMTU(t, MTU) }
 
 // setupWithMTU is setup with a device whose config has its own MTU.
-func setupWithMTU(t *testing.T, mtu int) (*Server, *client) {
+func setupWithMTU(t testing.TB, mtu int) (*Server, *client) {
 	sPriv, sPub := keyPair(t)
 	cPriv, cPub := keyPair(t)
 	s, err := Start(loopback, 0, sPriv)
@@ -139,7 +139,15 @@ func viaRemote(addr string) string {
 }
 
 // tcpServer answers each connection with n bytes, then closes it.
-func tcpServer(t *testing.T, n int) string {
+// zeros reads as endless zero bytes, so a test server sends any amount without allocating it.
+type zeros struct{}
+
+func (zeros) Read(p []byte) (int, error) {
+	clear(p)
+	return len(p), nil
+}
+
+func tcpServer(t testing.TB, n int) string {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -155,7 +163,7 @@ func tcpServer(t *testing.T, n int) string {
 				defer c.Close()
 				buf := make([]byte, 5)
 				io.ReadFull(c, buf)
-				c.Write(make([]byte, n))
+				io.CopyN(c, zeros{}, int64(n))
 			}()
 		}
 	}()
@@ -181,7 +189,7 @@ func udpEcho(t *testing.T) string {
 	return viaRemote(c.LocalAddr().String())
 }
 
-func fetch(t *testing.T, c *client, addr string) (int, error) {
+func fetch(t testing.TB, c *client, addr string) (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	conn, err := c.net.DialContext(ctx, "tcp", addr)

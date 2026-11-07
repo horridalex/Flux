@@ -65,6 +65,8 @@ struct DeviceView: View {
     @ObservedObject var model: Model
     let peer: WireGuardSetup.Peer
     @State private var confirmRemove = false
+    /// The device's own config as a QR code and a file, made when asked for, see `showCode`.
+    @State private var code: (qr: UIImage?, file: URL?)?
     @Environment(\.dismiss) private var dismiss
 
     /// The saved device, so a new name shows at once.
@@ -82,6 +84,40 @@ struct DeviceView: View {
                 Text("A travel router's figures include every device behind it.")
             }
             Section {
+                if let code {
+                    if let qr = code.qr {
+                        Image(uiImage: qr)
+                            .interpolation(.none)
+                            .resizable()
+                            .scaledToFit()
+                            .padding(14)
+                            .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .frame(maxWidth: 240)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .accessibilityLabel("QR code for this device")
+                            .accessibilityIdentifier("device.qr")
+                    }
+                    if let file = code.file {
+                        ShareLink(item: file) {
+                            Label("Share as a file, for a Mac or a router", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                    Button("Hide QR code") { self.code = nil }
+                } else {
+                    Button {
+                        showCode()
+                    } label: {
+                        Label("Show QR code", systemImage: "qrcode")
+                    }
+                    .accessibilityIdentifier("device.showQR")
+                }
+            } header: {
+                Text("Set up again")
+            } footer: {
+                Text("Scan it on this device to set it up again, after a DNS change say. Then delete its old tunnel in WireGuard. The code holds the device's key, so show it only to the device.")
+            }
+            Section {
                 Button("Remove device", role: .destructive) { confirmRemove = true }
                     .accessibilityIdentifier("device.remove")
             } footer: {
@@ -92,12 +128,20 @@ struct DeviceView: View {
         .navigationTitle(Binding(get: { current.name }, set: { model.renameWireGuardDevice(peer.id, to: $0) }))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarRole(.editor)
+        .onDisappear { code = nil } // the key doesn't stay on screen for the next visit
         .confirmationDialog("Remove \(current.name)?", isPresented: $confirmRemove, titleVisibility: .visible) {
             Button("Remove", role: .destructive) {
                 model.removeWireGuardDevice(peer.id)
                 dismiss()
             }
         }
+    }
+
+    /// Made once when asked for, not on every redraw: the screen redraws every second with the
+    /// speeds. It has the DNS servers chosen now, so scanning it again brings a DNS change over.
+    private func showCode() {
+        let text = model.wireGuardConfig(for: current)
+        code = (QRCode.image(text), ConfigFile.write(text, named: current.name))
     }
 }
 
