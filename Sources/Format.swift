@@ -3,7 +3,10 @@ import Foundation
 /// Byte counts and speeds as text.
 enum Format {
     static func bytes(_ n: UInt64) -> String {
-        ByteCountFormatter.string(fromByteCount: Int64(clamping: n), countStyle: .file)
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        formatter.allowsNonnumericFormatting = false // "0 bytes", not "Zero KB"
+        return formatter.string(fromByteCount: Int64(clamping: n))
     }
 
     /// Bits per second in the unit a person expects on a speed test.

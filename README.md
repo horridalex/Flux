@@ -6,6 +6,10 @@ Share your iPhone's internet with your iPad, Mac or travel router, even when you
 
 <img src="Sources/Assets.xcassets/AppIcon.appiconset/icon-1024.png" width="96" alt="Flux icon">
 
+<img src="docs/main-dark.png" width="200" alt="Flux sharing with an iPad: the speed, today's usage, the devices and the QR code for the next one"> <img src="docs/main-light.png" width="200" alt="The same screen in light mode"> <img src="docs/usage-dark.png" width="200" alt="This month's usage, a 30-day chart and each day's total"> <img src="docs/device-dark.png" width="200" alt="A device's screen: connected, its speed, its usage today, and its QR code to set it up again">
+
+The screenshots come from Actions > Screenshots, which takes them from the demo scenarios.
+
 ## Why this works
 
 Carriers can tell when traffic comes from a device that's connected to your hotspot, and some plans block it or slow it to a crawl. Traffic that comes from the phone itself is fine.

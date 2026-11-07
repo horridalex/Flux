@@ -1,8 +1,8 @@
 import SwiftUI
 
-// Flux's look: an aurora that flows behind every screen while Flux shares, and glass tiles on it.
-// On iOS 26 the tiles are Liquid Glass. Before it they're a thin material with a light rim, and
-// before iOS 18, which has no mesh gradient, the aurora is a plain gradient that doesn't move.
+// Flux's look: an aurora that flows behind the main screen while Flux shares, and opaque cards on
+// it, so text keeps its contrast. Before iOS 18, which has no mesh gradient, the aurora is a plain
+// gradient that doesn't move.
 
 /// The brand's colours, from the app icon: cyan into blue into violet.
 enum Brand {
@@ -16,8 +16,10 @@ enum Brand {
 }
 
 /// Behind every screen. `flowing` moves it, while Flux shares, unless Reduce Motion is on.
+/// `calm` veils it more, for a List, whose headers and footers sit on it with no glass between.
 struct AuroraBackground: View {
     var flowing: Bool
+    var calm = false
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -50,6 +52,9 @@ struct AuroraBackground: View {
                 LinearGradient(colors: [palette[0], palette[4], palette[8]], startPoint: .topLeading, endPoint: .bottomTrailing)
             }
         }
+        // A veil of the system background, so secondary text on glass keeps its contrast where the
+        // aurora is brightest. The accessibility audit's contrast test fails without it.
+        .overlay(Color(uiColor: .systemBackground).opacity(calm ? 0.8 : (scheme == .dark ? 0.3 : 0.4)))
         .ignoresSafeArea()
         .accessibilityHidden(true)
     }
@@ -73,26 +78,23 @@ struct AuroraBackground: View {
 }
 
 extension View {
-    /// A tile on the aurora: Liquid Glass on iOS 26, a thin material before it. `tint` colours the
-    /// glass a little, for the status.
-    @ViewBuilder
+    /// A tile on the aurora: an opaque card. `tint` colours it a little, for the status.
     func glassTile(cornerRadius: CGFloat = 24, tint: Color? = nil) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-        if #available(iOS 26.0, *) {
-            self.glassEffect(tint.map { Glass.regular.tint($0) } ?? Glass.regular, in: shape)
-        } else {
-            self
-                .background(.ultraThinMaterial, in: shape)
-                .background((tint ?? .clear).opacity(0.18), in: shape)
-                .overlay(shape.strokeBorder(Color.white.opacity(0.22), lineWidth: 1))
-        }
+        // An opaque card: glass let the aurora show through the text, and the accessibility
+        // audit failed it, even in the primary colour. `tint` colours the card lightly, for
+        // the status, and the rim keeps a little of the glass look.
+        return self
+            .background((tint ?? .clear).opacity(0.5), in: shape)
+            .background(Color(uiColor: .secondarySystemGroupedBackground), in: shape)
+            .overlay(shape.strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
     }
 
-    /// The aurora behind a List, as on the main screen.
+    /// A List keeps the system's grouped background: its headers and footers sit straight on it,
+    /// with no card between, and on the aurora they failed the contrast audit. `flowing` stays for
+    /// the callers, the aurora being the main screen's alone.
     func auroraList(flowing: Bool = false) -> some View {
         self
-            .scrollContentBackground(.hidden)
-            .background(AuroraBackground(flowing: flowing))
     }
 }
 
@@ -108,7 +110,7 @@ struct Tile<Content: View>: View {
                 Text(title)
                     .font(.caption.weight(.semibold))
                     .textCase(.uppercase)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.primary.opacity(0.8)) // .secondary is too faint on glass
                     .accessibilityAddTraits(.isHeader)
             }
             content

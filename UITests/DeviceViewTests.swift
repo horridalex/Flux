@@ -52,7 +52,13 @@ final class DeviceViewTests: FluxUITestCase {
         element("device.remove").tap()
         XCTAssertTrue(app.buttons["Remove"].firstMatch.waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Remove iPad?"].exists)
-        app.buttons["Cancel"].firstMatch.tap()
+        // iOS 26 shows the dialog as a popover with no Cancel button: a tap outside it cancels.
+        let cancel = app.buttons["Cancel"].firstMatch
+        if cancel.exists {
+            cancel.tap()
+        } else {
+            app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.03)).tap()
+        }
         waitUntilGone(app.buttons["Remove"].firstMatch)
         XCTAssertTrue(app.navigationBars["iPad"].exists, "still on the device's screen")
         goBack(to: "Flux")

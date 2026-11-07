@@ -1,0 +1,50 @@
+# Merges Dependabot's pull requests once CI passes on them, for minor and patch updates: the bug
+# and security fixes. A major version (setup-go 6 -> 7, say) can change how a tool works in ways CI
+# doesn't cover, like the IPA build or a release, so those wait for a person.
+#
+# It runs after CI, from main's copy of this file, and never checks out the pull request's code.
+name: Merge Dependabot updates
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.actor.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge if it's a minor or patch update
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          TESTED: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          pr=$(gh pr list --repo "$REPO" --head "$BRANCH" --state open \
+            --json number,author,headRefOid --jq '.[0] // empty')
+          if [[ -z $pr ]]; then echo "no open pull request for $BRANCH"; exit 0; fi
+          number=$(jq -r .number <<<"$pr")
+          author=$(jq -r .author.login <<<"$pr")
+          head=$(jq -r .headRefOid <<<"$pr")
+          if [[ $author != "app/dependabot" && $author != "dependabot[bot]" && $author != "dependabot" ]]; then
+            echo "#$number is by $author, not Dependabot"; exit 0
+          fi
+          if [[ $head != "$TESTED" ]]; then
+            echo "#$number changed since CI tested it, so it waits for the next run"; exit 0
+          fi
+          # Dependabot's commit message names the kind of each update in the group.
+          if gh pr view "$number" --repo "$REPO" --json commits --jq '.commits[].messageBody' \
+              | grep -q "update-type: version-update:semver-major"; then
+            echo "#$number has a major version, so it waits for a person"; exit 0
+          fi
+          gh pr merge "$number" --repo "$REPO" --merge --match-head-commit "$TESTED"
+          echo "merged #$number"
