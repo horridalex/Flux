@@ -115,6 +115,7 @@ struct Tile<Content: View>: View {
                         Text(subtitle)
                             .font(.subheadline)
                             .foregroundStyle(Brand.subtext)
+                            .lineLimit(1) // a grey line under a title never takes two
                     }
                 }
             }

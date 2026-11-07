@@ -14,13 +14,9 @@ struct AddDeviceSection: View {
             Button { adding = true } label: {
                 HStack(spacing: 14) {
                     IconTile(systemName: "plus", color: Brand.accent)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(first ? LocalizedStringKey("Add a device") : LocalizedStringKey("Add another device"))
-                            .font(.body.weight(.bold))
-                        Text("Connect an iPad, a Mac or a travel router")
-                            .font(.subheadline)
-                            .foregroundStyle(Brand.subtext)
-                    }
+                    Text(first ? LocalizedStringKey("Add a device") : LocalizedStringKey("Add another device"))
+                        .font(.body.weight(.bold))
+                        .lineLimit(1)
                     Spacer(minLength: 8)
                     Text("Connect")
                         .font(.body.weight(.bold))
@@ -71,15 +67,18 @@ struct AddDeviceSheet: View {
                                     .accessibilityLabel("QR code for the next device")
                                     .accessibilityIdentifier("add.qr")
                             }
-                            Text("Install WireGuard on it, tap + > Create from QR code and scan this. Then edit the tunnel and turn On-Demand on for this iPhone's hotspot only. A travel router imports the file and turns its VPN on.")
+                            Text("In WireGuard, tap + > Create from QR code")
                                 .font(.subheadline)
                                 .foregroundStyle(Brand.subtext)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
                                 .accessibilityIdentifier("add.steps")
                         }
                         Tile(title: "With a file", subtitle: "For a Mac or a travel router") {
-                            Text("Send the file to it, by AirDrop say. On a Mac, import it in WireGuard; on a router, add it as a WireGuard client and turn its VPN on.")
+                            Text("Import it in WireGuard")
                                 .font(.subheadline)
                                 .foregroundStyle(Brand.subtext)
+                                .lineLimit(1)
                             if let file = code.file {
                                 ShareLink(item: file) {
                                     Label("Share as a file, for a Mac or a router", systemImage: "square.and.arrow.up")

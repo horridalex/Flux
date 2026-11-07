@@ -9,7 +9,7 @@ final class AddDeviceTests: FluxUITestCase {
         XCTAssertTrue(element("add.qr").waitForExistence(timeout: 5), "the QR code sheet did not open")
     }
 
-    private let steps = "Install WireGuard on it, tap + > Create from QR code and scan this. Then edit the tunnel and turn On-Demand on for this iPhone's hotspot only. A travel router imports the file and turns its VPN on."
+    private let steps = "In WireGuard, tap + > Create from QR code"
 
     func testBeforeAnyDeviceTheMainScreenShowsTheQRCodeTheFileAndTheSteps() {
         launch(.waiting)

@@ -38,7 +38,7 @@ struct MainView: View {
                     }
 
                     if !model.wireGuardPeers.isEmpty {
-                        Tile(title: "Devices", subtitle: "Tap a device to rename or remove it") {
+                        Tile(title: "Devices") {
                             VStack(spacing: 4) {
                                 ForEach(model.wireGuardPeers) { peer in
                                     NavigationLink { DeviceView(model: model, peer: peer) } label: {
@@ -120,6 +120,7 @@ struct DeviceRow: View {
                 detail
                     .font(.subheadline)
                     .foregroundStyle(Brand.subtext)
+                    .lineLimit(1)
             }
             Spacer(minLength: 0)
         }
@@ -310,6 +311,8 @@ struct StatusCard: View {
                 Text("To stop, turn off Personal Hotspot.")
                     .font(.subheadline)
                     .foregroundStyle(Brand.subtext)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                     .accessibilityIdentifier("status.stopHint")
             } else if model.running {
                 // The WireGuard card under this one says why, and what to do.
