@@ -74,6 +74,10 @@ struct DeviceView: View {
             Section {
                 ConnectedLabel(connected: connected)
                     .accessibilityIdentifier("device.status")
+                UsageRow(title: "Used today", bytes: model.usageToday.devices[peer.id.uuidString] ?? Usage.Bytes())
+                    .accessibilityIdentifier("device.usage")
+            } footer: {
+                Text("A travel router's figures include every device behind it.")
             }
             Section {
                 Button("Remove device", role: .destructive) { confirmRemove = true }

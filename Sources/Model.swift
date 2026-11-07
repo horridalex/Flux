@@ -2,6 +2,7 @@
 //   TetherApp.swift     the @main App only
 //   Model.swift         Model, Interfaces
 //   Traffic.swift       the server's byte counters, Foundation only
+//   Usage.swift         how much was shared today, in all and by device, Foundation only
 //   Format.swift        bytes and speeds as text
 //   MainView.swift      MainView (the main screen), StatusCard, and the speeds
 //   DevicesView.swift   the QR code for the next device, and a device's own screen
@@ -42,6 +43,14 @@ final class Model: ObservableObject {
     /// The tunnel addresses of the WireGuard devices that are connected. Read with every sample
     /// while the app is on screen.
     @Published var wireGuardConnected: Set<String> = []
+    /// How much was shared today, in all and by device id. Kept across launches.
+    @Published var usageToday: Usage
+
+    private var usageMeter: UsageMeter
+    private let usageStore = UsageStore()
+    /// When `usageToday` was last saved. It's saved at most every 10 seconds, and when Tether
+    /// leaves the screen.
+    private var usageSavedAt = Date.distantPast
 
     private let wireGuard = WireGuardServer()
     private let wireGuardDevices: WireGuardDevices
@@ -66,6 +75,13 @@ final class Model: ObservableObject {
         self.wireGuardDevices = WireGuardDevices(secrets: secrets)
         self.wireGuardPeers = wireGuardDevices.setup.peers
         self.wireGuardReady = wireGuardDevices.setup.ready
+        #if DEBUG
+        let usage = demo == nil ? usageStore.load() : Usage(day: Usage.day(of: Date()))
+        #else
+        let usage = usageStore.load()
+        #endif
+        self.usageToday = usage
+        self.usageMeter = UsageMeter(today: usage)
         #if DEBUG
         if let demo {
             self.demo = demo
@@ -125,6 +141,7 @@ final class Model: ObservableObject {
         let hotspot = Interfaces.hotspotAddress()
         if running, hotspot != boundHost {
             append("hotspot address gone or changed, stopping")
+            recordUsage(saving: true) // what the devices used since the last reading
             wireGuard.stop()
             running = false
         }
@@ -225,7 +242,13 @@ final class Model: ObservableObject {
     }
 
     func removeWireGuardDevice(_ id: WireGuardSetup.Peer.ID) {
-        if !wireGuardDevices.remove(id) { append("WireGuard: the removal couldn't be saved, the device stays") }
+        if !wireGuardDevices.remove(id) {
+            append("WireGuard: the removal couldn't be saved, the device stays")
+        } else {
+            recordUsage() // its last bytes, before the server forgets its counter
+            usageMeter.forget(device: id.uuidString)
+            publishUsage(saving: true)
+        }
         wireGuardPeersChanged()
     }
 
@@ -262,6 +285,7 @@ final class Model: ObservableObject {
         defer { lastSample = (snap.bytesUp, snap.bytesDown, now) }
         let connected = wireGuard.connectedAddresses // from the snapshot above
         if connected != wireGuardConnected { wireGuardConnected = connected }
+        recordUsage(snap, now: now)
         claimReady(connected: connected)
         guard let last = lastSample else { return } // the first sample has nothing to compare with
         let seconds = now.timeIntervalSince(last.at)
@@ -283,8 +307,32 @@ final class Model: ObservableObject {
     /// connects then is listed too and the next one gets a new code.
     private func claimReadyInBackground() {
         guard running else { return }
-        _ = wireGuard.snapshot() // refreshes connectedAddresses
+        let snap = wireGuard.snapshot() // refreshes connectedAddresses
+        recordUsage(snap)
         claimReady(connected: wireGuard.connectedAddresses)
+    }
+
+    /// Adds what the devices used since the last reading to today's figures. `snap` is a
+    /// `snapshot()` just taken, or nil to take one.
+    private func recordUsage(_ snap: TrafficTotals? = nil, now: Date = Date(), saving: Bool = false) {
+        guard wireGuard.running else { return }
+        let total = snap ?? wireGuard.snapshot()
+        // Every device the server lets in, the one behind the QR code included: it keeps its id
+        // when it's listed.
+        var owners: [String: String] = [:]
+        for peer in wireGuardDevices.setup.serverPeers { owners[peer.address] = peer.id.uuidString }
+        usageMeter.record(total: total, devices: wireGuard.deviceTotals, owners: owners, now: now)
+        publishUsage(now: now, saving: saving)
+    }
+
+    private func publishUsage(now: Date = Date(), saving: Bool = false) {
+        let today = usageMeter.today
+        guard today != usageToday || saving else { return }
+        usageToday = today
+        if saving || now.timeIntervalSince(usageSavedAt) >= 10 {
+            usageStore.save(today)
+            usageSavedAt = now
+        }
     }
 
     /// The server's counters never go backwards. The guard is only a safety net.
@@ -306,6 +354,7 @@ final class Model: ObservableObject {
             model.startSampler() // samples at once, then every second again
         }
         observe(UIApplication.willResignActiveNotification) { model in
+            model.publishUsage(saving: true)
             model.sceneActive = false
             model.sampler?.cancel()
             model.lastSample = nil // or the first speed back on screen averages the whole time away

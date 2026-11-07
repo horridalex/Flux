@@ -91,6 +91,12 @@ struct DemoState {
         // The iPad's tunnel is up, the MacBook's isn't, so the list shows both states.
         model.wireGuardConnected = [.sharing, .expiring].contains(scenario) ? ["10.7.0.2"] : []
         model.expires = scenario == .expiring ? DemoScenario.now.addingTimeInterval(2 * 86_400) : nil
+        // Today's figures, the iPad's most of them.
+        if [.sharing, .expiring].contains(scenario), let iPad = model.wireGuardPeers.first {
+            model.usageToday = Usage(day: Usage.day(of: DemoScenario.now),
+                                     all: Usage.Bytes(up: 96_000_000, down: 1_250_000_000),
+                                     devices: [iPad.id.uuidString: Usage.Bytes(up: 80_000_000, down: 1_100_000_000)])
+        }
     }
 }
 #endif

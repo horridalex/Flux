@@ -37,6 +37,7 @@ final class WireGuardServer {
         TetherWGStop()
         running = false
         connectedAddresses = []
+        deviceTotals = [:]
     }
 
     /// Lets in exactly the devices in `setup`. A removed device's open connections finish on their own.
@@ -70,14 +71,19 @@ final class WireGuardServer {
     /// The tunnel addresses of the devices with a recent handshake: set up and working, also
     /// before they sent anything. From the last `snapshot()`, so both describe the same moment.
     private(set) var connectedAddresses: Set<String> = []
+    /// Each device's own counters in this run of the server, by tunnel address, from the last
+    /// `snapshot()`. Unlike the totals they start from zero when the server starts again.
+    private(set) var deviceTotals: [String: TrafficTotals] = [:]
 
     private func currentRun() -> TrafficTotals {
         guard let json = take(TetherWGStats()), let data = json.data(using: .utf8),
               let stats = try? JSONDecoder().decode(GoStats.self, from: data) else {
             connectedAddresses = []
+            deviceTotals = [:]
             return TrafficTotals()
         }
         connectedAddresses = Set(stats.connected)
+        deviceTotals = (stats.devices ?? [:]).mapValues { TrafficTotals(bytesUp: $0.up, bytesDown: $0.down) }
         return TrafficTotals(bytesUp: stats.up, bytesDown: stats.down)
     }
 
@@ -91,6 +97,12 @@ final class WireGuardServer {
         let up: UInt64
         let down: UInt64
         let connected: [String]
+        let devices: [String: GoBytes]?
+    }
+
+    private struct GoBytes: Decodable {
+        let up: UInt64
+        let down: UInt64
     }
 }
 

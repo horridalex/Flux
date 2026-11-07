@@ -27,9 +27,13 @@ struct MainView: View {
                 // Above the QR code, so a reason it doesn't work and the way out are both here.
                 WireGuardProblemSection(model: model)
 
-                if model.sharing {
+                if model.sharing || model.usageToday.all.total > 0 {
                     Section {
-                        SpeedRow(down: model.downSpeed, up: model.upSpeed)
+                        if model.sharing {
+                            SpeedRow(down: model.downSpeed, up: model.upSpeed)
+                        }
+                        UsageRow(title: "Used today", bytes: model.usageToday.all)
+                            .accessibilityIdentifier("usage.today")
                     }
                 }
 
@@ -77,6 +81,27 @@ struct SpeedRow: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Download \(Format.speed(down)), upload \(Format.speed(up))")
         .accessibilityIdentifier("traffic.speeds")
+    }
+}
+
+/// How much was downloaded and uploaded, for today's figures.
+struct UsageRow: View {
+    let title: LocalizedStringKey
+    let bytes: Usage.Bytes
+
+    var body: some View {
+        LabeledContent(title) {
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(verbatim: Format.bytes(bytes.total))
+                Text("\(Image(systemName: "arrow.down")) \(Format.bytes(bytes.down))  \(Image(systemName: "arrow.up")) \(Format.bytes(bytes.up))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .monospacedDigit()
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(title))
+        .accessibilityValue(Text("\(Format.bytes(bytes.total)), download \(Format.bytes(bytes.down)), upload \(Format.bytes(bytes.up))"))
     }
 }
 
