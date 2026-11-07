@@ -126,3 +126,78 @@ struct Tile<Content: View>: View {
         .card(tint: tint)
     }
 }
+
+/// The second button of a confirmation sheet: grey, to back out.
+struct SecondaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.bold))
+            .lineLimit(1)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .foregroundStyle(Color.primary)
+            .background(Brand.tile, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .opacity(configuration.isPressed ? 0.75 : 1)
+    }
+}
+
+/// Solid red, white text: a button that removes or resets something for good.
+struct DestructiveButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.bold))
+            .lineLimit(1)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .foregroundStyle(Color.white)
+            .background(Brand.danger, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .opacity(configuration.isPressed ? 0.75 : 1)
+    }
+}
+
+extension Brand {
+    /// A destructive button's red, with white text on it in both modes.
+    static let danger = Color(red: 0.78, green: 0.22, blue: 0.27)
+}
+
+/// Asks before something that can't be undone, from the bottom of the screen: a question, what it
+/// means, and Cancel beside the red button that does it.
+struct ConfirmSheet: View {
+    let title: Text
+    let message: Text
+    let confirm: LocalizedStringKey
+    var confirmID = "confirm.do"
+    let action: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            title
+                .font(.title3.weight(.heavy))
+                .fixedSize(horizontal: false, vertical: true)
+            message
+                .font(.body)
+                .foregroundStyle(Brand.subtext)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            HStack(spacing: 10) {
+                Button("Cancel") { dismiss() }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .accessibilityIdentifier("confirm.cancel")
+                Button(confirm) {
+                    dismiss()
+                    action()
+                }
+                .buttonStyle(DestructiveButtonStyle())
+                .accessibilityIdentifier(confirmID)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 32)
+        .padding(.bottom, 16)
+        .presentationDetents([.height(300), .medium])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(32)
+        .presentationBackground(Brand.card)
+    }
+}

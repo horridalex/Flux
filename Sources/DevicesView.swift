@@ -110,6 +110,7 @@ struct AddDeviceSheet: View {
 /// Why WireGuard isn't running, with the way out when the saved keys can't be read.
 struct WireGuardProblemSection: View {
     @ObservedObject var model: Model
+    @State private var confirmReset = false
 
     var body: some View {
         if let problem = model.wireGuardProblem {
@@ -117,10 +118,16 @@ struct WireGuardProblemSection: View {
                 Label(problem, systemImage: "exclamationmark.triangle")
                     .accessibilityIdentifier("wireguard.problem")
                 if model.wireGuardNeedsReset {
-                    Button("Start over with new keys", role: .destructive) { model.resetWireGuard() }
-                        .buttonStyle(.borderedProminent) // white on red: red text fails on the orange glass
-                        .tint(.red)
+                    Button("Start over with new keys") { confirmReset = true }
+                        .buttonStyle(DestructiveButtonStyle())
                         .accessibilityIdentifier("wireguard.reset")
+                        .sheet(isPresented: $confirmReset) {
+                            ConfirmSheet(title: Text("Start over with new keys?"),
+                                         message: Text("Every device has to be added again, with a new QR code or file."),
+                                         confirm: "Start over", confirmID: "wireguard.reset.confirm") {
+                                model.resetWireGuard()
+                            }
+                        }
                 }
             }
         }
@@ -202,15 +209,14 @@ struct DeviceView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarRole(.editor)
         .onDisappear { code = nil } // the key doesn't stay on screen for the next visit
-        // An alert, not a confirmation dialog: on iOS 26 that's a popover with no Cancel button.
-        .alert("Remove \(current.name)?", isPresented: $confirmRemove) {
-            Button("Remove", role: .destructive) {
+        // A sheet from the bottom, with Cancel beside the red button.
+        .sheet(isPresented: $confirmRemove) {
+            ConfirmSheet(title: Text("Remove \(current.name)?"),
+                         message: Text("It can't connect any more. Delete its tunnel in its WireGuard app too."),
+                         confirm: "Remove", confirmID: "device.remove.confirm") {
                 model.removeWireGuardDevice(peer.id)
                 dismiss()
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("It can't connect any more. Delete its tunnel in its WireGuard app too.")
         }
     }
 

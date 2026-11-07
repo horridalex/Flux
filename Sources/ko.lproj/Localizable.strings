@@ -38,8 +38,8 @@
 
 /* A device's screen */
 "Remove device" = "기기 제거";
-"Remove" = "제거";
-"Remove %@?" = "%@을(를) 제거할까요?";
+"Remove" = "지우기";
+"Remove %@?" = "%@을(를) 지울까요?";
 "It can't connect any more. Delete its tunnel in its WireGuard app too." = "이 기기는 더 이상 연결할 수 없습니다. 기기의 WireGuard 앱에서도 터널을 삭제하세요.";
 "A travel router's figures include every device behind it." = "여행용 라우터의 사용량에는 그 뒤에 연결된 모든 기기가 포함됩니다.";
 
@@ -132,6 +132,9 @@
 "With a file" = "파일로 연결";
 "For a Mac or a travel router" = "Mac·라우터용";
 "Send the file to it, by AirDrop say. On a Mac, import it in WireGuard; on a router, add it as a WireGuard client and turn its VPN on." = "AirDrop 등으로 파일을 보내세요. Mac은 WireGuard 앱에서 가져오고, 라우터는 VPN 설정에서 WireGuard 클라이언트로 추가한 뒤 VPN을 켜면 돼요.";
-"Cancel" = "취소";
+"Cancel" = "닫기";
 "In WireGuard, tap + > Create from QR code" = "WireGuard 앱에서 + > QR 코드로부터 생성";
 "Import it in WireGuard" = "WireGuard 앱에서 가져오세요";
+"Start over with new keys?" = "새 키로 다시 시작할까요?";
+"Every device has to be added again, with a new QR code or file." = "연결한 기기를 모두 새 QR 코드나 파일로 다시 추가해야 해요.";
+"Start over" = "다시 시작";

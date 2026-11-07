@@ -93,6 +93,8 @@ final class DeviceViewTests: FluxUITestCase {
     func testStartingOverClearsTheProblemAndShowsTheQRCode() {
         launch(.wireGuardNeedsReset)
         reveal(element("wireguard.reset")).tap()
+        XCTAssertTrue(element("wireguard.reset.confirm").waitForExistence(timeout: 5), "it asks first")
+        element("wireguard.reset.confirm").tap()
         waitUntilGone(element("wireguard.problem"))
         XCTAssertFalse(element("wireguard.reset").exists)
         XCTAssertTrue(reveal(element("add.showQR")).exists)
