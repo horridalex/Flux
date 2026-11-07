@@ -83,10 +83,16 @@ extension View {
     @ViewBuilder
     func glassTile(cornerRadius: CGFloat = 24, tint: Color? = nil) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        // A half-opaque base under the text: clear glass let the aurora through, and the
+        // accessibility audit failed text on it, primary included.
+        let base = Color(uiColor: .systemBackground).opacity(0.55)
         if #available(iOS 26.0, *) {
-            self.glassEffect(tint.map { Glass.regular.tint($0) } ?? Glass.regular, in: shape)
+            self
+                .background(base, in: shape)
+                .glassEffect(tint.map { Glass.regular.tint($0) } ?? Glass.regular, in: shape)
         } else {
             self
+                .background(base, in: shape)
                 .background(.ultraThinMaterial, in: shape)
                 .background((tint ?? .clear).opacity(0.18), in: shape)
                 .overlay(shape.strokeBorder(Color.white.opacity(0.22), lineWidth: 1))
@@ -113,7 +119,7 @@ struct Tile<Content: View>: View {
                 Text(title)
                     .font(.caption.weight(.semibold))
                     .textCase(.uppercase)
-                    .foregroundStyle(Color.primary.opacity(0.75)) // .secondary is too faint on glass
+                    .foregroundStyle(Color.primary.opacity(0.8)) // .secondary is too faint on glass
                     .accessibilityAddTraits(.isHeader)
             }
             content

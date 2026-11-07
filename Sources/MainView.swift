@@ -228,7 +228,7 @@ struct StatusCard: View {
 
     /// The glass takes a little of the brand's blue while sharing, and of orange, the warning
     /// colour, while waiting.
-    private var glassTint: Color { sharing ? Brand.blue.opacity(0.25) : Color.orange.opacity(0.22) }
+    private var glassTint: Color { sharing ? Brand.blue.opacity(0.2) : Color.orange.opacity(0.15) }
 
     /// Opens Settings at its main screen, where Personal Hotspot is near the top. Nothing goes
     /// straight to the Personal Hotspot page any more: on iOS 27, App-prefs:INTERNET_TETHERING and
