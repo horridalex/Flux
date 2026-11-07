@@ -16,7 +16,7 @@ settings:
     # The app's bundle ID, the same as the IPA that build-ipa.yml makes. Pass APP_BUNDLE_ID to
     # xcodebuild to change it. A new one installs a second Flux with new keys.
     APP_BUNDLE_ID: com.personal.flux
-    MARKETING_VERSION: "1.0"
+    MARKETING_VERSION: "1.1"
     CURRENT_PROJECT_VERSION: "1" # the built app gets the commit count instead, see postBuildScripts
 targets:
   Flux:
