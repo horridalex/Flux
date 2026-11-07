@@ -1,7 +1,7 @@
 import CryptoKit
 import Security
 import XCTest
-@testable import TetherCore
+@testable import FluxCore
 
 final class WireGuardSetupTests: XCTestCase {
     func testANewSetupHasAServerKeyAndNoDevices() {
@@ -197,8 +197,8 @@ final class WireGuardSetupTests: XCTestCase {
     }
 
     func testTheConfigFileNameIsSafe() {
-        XCTAssertEqual(WireGuardSetup.fileName(for: "Viktor's iPad"), "Tether-Viktor-s-iPad.conf")
-        XCTAssertEqual(WireGuardSetup.fileName(for: "///"), "Tether.conf")
+        XCTAssertEqual(WireGuardSetup.fileName(for: "Viktor's iPad"), "Flux-Viktor-s-iPad.conf")
+        XCTAssertEqual(WireGuardSetup.fileName(for: "///"), "Flux.conf")
     }
 
     func testItSurvivesARoundTrip() throws {
@@ -322,7 +322,7 @@ final class KeychainSecretsTests: XCTestCase {
     private var secrets: KeychainSecrets!
 
     override func setUpWithError() throws {
-        service = "tether.wireguard.tests.\(UUID().uuidString)"
+        service = "flux.wireguard.tests.\(UUID().uuidString)"
         secrets = KeychainSecrets(service: service)
         // Reading can work where saving can't: the CI runner is a background service with no
         // unlocked login keychain, and saving there fails with errSecInteractionNotAllowed

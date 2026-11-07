@@ -29,9 +29,9 @@ enum AppExpiry {
         let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: now), to: calendar.startOfDay(for: expires)).day ?? 0
         // Whole sentences, so a language can put the day where it belongs.
         switch days {
-        case ...0: return String(localized: "Tether stops opening today. Install it again before then.")
-        case 1: return String(localized: "Tether stops opening tomorrow. Install it again before then.")
-        default: return String(localized: "Tether stops opening in \(days) days. Install it again before then.")
+        case ...0: return String(localized: "Flux stops opening today. Install it again before then.")
+        case 1: return String(localized: "Flux stops opening tomorrow. Install it again before then.")
+        default: return String(localized: "Flux stops opening in \(days) days. Install it again before then.")
         }
     }
 }

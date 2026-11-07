@@ -1,7 +1,7 @@
 package main
 
 // The C API WireGuardServer.swift calls. One server at a time. Strings Go returns are malloc'd and
-// the caller frees them with TetherWGFree. Keys are 32 raw bytes.
+// the caller frees them with FluxWGFree. Keys are 32 raw bytes.
 
 /*
 #include <stdlib.h>
@@ -39,10 +39,10 @@ func survive(result **C.char) {
 	}
 }
 
-// TetherWGStart listens on host:port. Returns nil, or an error message.
+// FluxWGStart listens on host:port. Returns nil, or an error message.
 //
-//export TetherWGStart
-func TetherWGStart(host *C.char, port C.int, privateKey *C.uint8_t) (result *C.char) {
+//export FluxWGStart
+func FluxWGStart(host *C.char, port C.int, privateKey *C.uint8_t) (result *C.char) {
 	defer survive(&result)
 	mu.Lock()
 	defer mu.Unlock()
@@ -67,8 +67,8 @@ func TetherWGStart(host *C.char, port C.int, privateKey *C.uint8_t) (result *C.c
 	return nil
 }
 
-//export TetherWGStop
-func TetherWGStop() {
+//export FluxWGStop
+func FluxWGStop() {
 	mu.Lock()
 	defer mu.Unlock()
 	if server == nil {
@@ -81,11 +81,11 @@ func TetherWGStop() {
 	s.Close()
 }
 
-// TetherWGSetPeers replaces the devices. keys holds count public keys back to back, addresses is
+// FluxWGSetPeers replaces the devices. keys holds count public keys back to back, addresses is
 // their tunnel addresses separated by newlines, in the same order.
 //
-//export TetherWGSetPeers
-func TetherWGSetPeers(keys *C.uint8_t, addresses *C.char, count C.int) (result *C.char) {
+//export FluxWGSetPeers
+func FluxWGSetPeers(keys *C.uint8_t, addresses *C.char, count C.int) (result *C.char) {
 	defer survive(&result)
 	mu.Lock()
 	defer mu.Unlock()
@@ -135,15 +135,15 @@ func parsePeers(keys []byte, addresses string) ([]Peer, error) {
 	return peers, nil
 }
 
-// TetherWGFreeMemory gives memory the GC has freed back to iOS. Swift calls it on a memory warning.
+// FluxWGFreeMemory gives memory the GC has freed back to iOS. Swift calls it on a memory warning.
 //
-//export TetherWGFreeMemory
-func TetherWGFreeMemory() { debug.FreeOSMemory() }
+//export FluxWGFreeMemory
+func FluxWGFreeMemory() { debug.FreeOSMemory() }
 
-// TetherWGStats returns the counters as JSON, or nil when the server isn't running.
+// FluxWGStats returns the counters as JSON, or nil when the server isn't running.
 //
-//export TetherWGStats
-func TetherWGStats() *C.char {
+//export FluxWGStats
+func FluxWGStats() *C.char {
 	mu.Lock()
 	defer mu.Unlock()
 	if server == nil {
@@ -153,7 +153,7 @@ func TetherWGStats() *C.char {
 	return C.CString(string(b))
 }
 
-//export TetherWGFree
-func TetherWGFree(p *C.char) { C.free(unsafe.Pointer(p)) }
+//export FluxWGFree
+func FluxWGFree(p *C.char) { C.free(unsafe.Pointer(p)) }
 
 func main() {}

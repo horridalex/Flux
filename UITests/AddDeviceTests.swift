@@ -1,7 +1,7 @@
 import XCTest
 
 /// Adding a device: the QR code, the shared file and the steps that are always on the main screen.
-final class AddDeviceTests: TetherUITestCase {
+final class AddDeviceTests: FluxUITestCase {
     private let steps = "Install WireGuard on it, tap + > Create from QR code and scan this. Then edit the tunnel and turn On-Demand on for this iPhone's hotspot only. A travel router imports the file and turns its VPN on."
 
     func testBeforeAnyDeviceTheMainScreenShowsTheQRCodeTheFileAndTheSteps() {

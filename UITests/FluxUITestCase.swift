@@ -1,13 +1,13 @@
 import XCTest
 
-/// The fake app states a test can launch (`-TetherDemo <name>`, see Sources/DemoMode.swift).
+/// The fake app states a test can launch (`-FluxDemo <name>`, see Sources/DemoMode.swift).
 /// Their fixed values are described there.
 enum Scenario: String {
     case waiting, noDevices, sharing, wireGuardLocked, wireGuardNeedsReset, expiring
 }
 
 /// Base class for the screen tests: launching, finding things by identifier, scrolling a List.
-class TetherUITestCase: XCTestCase {
+class FluxUITestCase: XCTestCase {
     var app: XCUIApplication!
 
     override func setUp() {
@@ -15,13 +15,13 @@ class TetherUITestCase: XCTestCase {
         continueAfterFailure = false
     }
 
-    /// Launches Tether in a demo scenario, in English with US formats so every text is stable.
+    /// Launches Flux in a demo scenario, in English with US formats so every text is stable.
     /// Pass `scenario: nil` for a normal launch.
     @discardableResult
     func launch(_ scenario: Scenario?, arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         var args = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
-        if let scenario { args += ["-TetherDemo", scenario.rawValue] }
+        if let scenario { args += ["-FluxDemo", scenario.rawValue] }
         app.launchArguments = args + arguments
         app.launch()
         self.app = app
@@ -185,7 +185,7 @@ class TetherUITestCase: XCTestCase {
 
     /// Toolbar buttons, drawn by the system in its own tint.
     static let systemButtons: Set<String> = ["Cancel", "Done"]
-    /// Tether's elements that use only `.secondary` text, the plain button tint or the system's red for a destructive button.
+    /// Flux's elements that use only `.secondary` text, the plain button tint or the system's red for a destructive button.
     static let systemStyled: Set<String> = ["wireguard.reset", "device.remove", "add.steps"]
 
     /// The audit without contrast, for a screen that is scrolled (see `audit`).

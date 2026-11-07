@@ -1,7 +1,7 @@
 import XCTest
 
 /// The speed row and the Devices section of the main screen.
-final class DevicesTests: TetherUITestCase {
+final class DevicesTests: FluxUITestCase {
     func testDevicesAreListedByNameWithTheirState() {
         launch(.sharing)
         let ipad = reveal(element("device.iPad"))

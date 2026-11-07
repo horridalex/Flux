@@ -1,6 +1,6 @@
 .build-dd/
 .build.log
-Tether.xcodeproj/
+Flux.xcodeproj/
 .DS_Store
 .build/
 .swiftpm/

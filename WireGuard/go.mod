@@ -1,4 +1,4 @@
-module tether/wireguard
+module flux/wireguard
 
 go 1.27.0
 

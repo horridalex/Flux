@@ -2,7 +2,7 @@
 import Foundation
 
 // Fixed, fake app state for the UI tests (UITests/). On the simulator there is no Personal Hotspot
-// and nothing to share, so a test launches the app with `-TetherDemo <scenario>` and gets one of
+// and nothing to share, so a test launches the app with `-FluxDemo <scenario>` and gets one of
 // these states instead.
 //
 // A demo launch starts nothing real: no WireGuard server, keep-alive audio, hotspot watcher, 1 s
@@ -23,12 +23,12 @@ enum DemoScenario: String, CaseIterable {
     /// Like `sharing`, with two days left before this build stops opening.
     case expiring
 
-    static let argument = "-TetherDemo"
+    static let argument = "-FluxDemo"
 
     /// Local 2026-10-17 18:00. The expiry warning is relative to this.
     static let now = Calendar.current.date(from: DateComponents(year: 2026, month: 10, day: 17, hour: 18))!
 
-    /// The scenario named after `-TetherDemo` in the launch arguments, nil in a normal launch.
+    /// The scenario named after `-FluxDemo` in the launch arguments, nil in a normal launch.
     static var current: DemoScenario? {
         let args = ProcessInfo.processInfo.arguments
         guard let flag = args.firstIndex(of: argument) else { return nil }

@@ -1,7 +1,7 @@
 import Foundation
-import TetherWG
+import FluxWG
 
-/// Runs the WireGuard server from WireGuard/ (Go, linked as TetherWG.xcframework). Only the main actor calls it. The Go side is thread-safe and quick, so nothing here waits.
+/// Runs the WireGuard server from WireGuard/ (Go, linked as FluxWG.xcframework). Only the main actor calls it. The Go side is thread-safe and quick, so nothing here waits.
 @MainActor
 final class WireGuardServer {
     private(set) var running = false
@@ -15,7 +15,7 @@ final class WireGuardServer {
         guard setup.serverPrivateKey.count == 32 else { throw Failure(message: "the server key isn't 32 bytes") }
         let error = setup.serverPrivateKey.withUnsafeBytes { key in
             host.withCString { h in
-                TetherWGStart(UnsafeMutablePointer(mutating: h), Int32(port),
+                FluxWGStart(UnsafeMutablePointer(mutating: h), Int32(port),
                               UnsafeMutablePointer(mutating: key.bindMemory(to: UInt8.self).baseAddress))
             }
         }
@@ -25,7 +25,7 @@ final class WireGuardServer {
             try setPeers(setup)
         } catch {
             // Not left half started: the watcher in Model retries a server that isn't running.
-            TetherWGStop()
+            FluxWGStop()
             running = false
             throw error
         }
@@ -34,7 +34,7 @@ final class WireGuardServer {
     func stop() {
         guard running else { return }
         carried.absorb(currentRun())
-        TetherWGStop()
+        FluxWGStop()
         running = false
         connectedAddresses = []
         deviceTotals = [:]
@@ -51,7 +51,7 @@ final class WireGuardServer {
         let addresses = peers.map(\.address).joined(separator: "\n")
         let error = keys.withUnsafeBytes { k in
             addresses.withCString { a in
-                TetherWGSetPeers(UnsafeMutablePointer(mutating: k.bindMemory(to: UInt8.self).baseAddress),
+                FluxWGSetPeers(UnsafeMutablePointer(mutating: k.bindMemory(to: UInt8.self).baseAddress),
                                  UnsafeMutablePointer(mutating: a), Int32(peers.count))
             }
         }
@@ -60,7 +60,7 @@ final class WireGuardServer {
 
     /// Gives memory Go's GC has freed back to iOS, on a memory warning.
     func freeMemory() {
-        if running { TetherWGFreeMemory() }
+        if running { FluxWGFreeMemory() }
     }
 
     /// Counters that only grow, across restarts.
@@ -76,7 +76,7 @@ final class WireGuardServer {
     private(set) var deviceTotals: [String: TrafficTotals] = [:]
 
     private func currentRun() -> TrafficTotals {
-        guard let json = take(TetherWGStats()), let data = json.data(using: .utf8),
+        guard let json = take(FluxWGStats()), let data = json.data(using: .utf8),
               let stats = try? JSONDecoder().decode(GoStats.self, from: data) else {
             connectedAddresses = []
             deviceTotals = [:]
@@ -92,7 +92,7 @@ final class WireGuardServer {
         var description: String { message }
     }
 
-    /// The parts of TetherWGStats' JSON the app uses, see Stats in server.go.
+    /// The parts of FluxWGStats' JSON the app uses, see Stats in server.go.
     private struct GoStats: Decodable {
         let up: UInt64
         let down: UInt64
@@ -109,6 +109,6 @@ final class WireGuardServer {
 /// Reads and frees a string Go returned.
 private func take(_ p: UnsafeMutablePointer<CChar>?) -> String? {
     guard let p else { return nil }
-    defer { TetherWGFree(p) }
+    defer { FluxWGFree(p) }
     return String(cString: p)
 }

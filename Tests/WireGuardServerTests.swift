@@ -1,9 +1,9 @@
 import Foundation
 import XCTest
-@testable import TetherCore
+@testable import FluxCore
 
 /// WireGuardServer.swift through the C API into the real Go server (WireGuard/, linked as
-/// TetherWG.xcframework's macOS slice). Traffic through the tunnel is tested in Go, where a real
+/// FluxWG.xcframework's macOS slice). Traffic through the tunnel is tested in Go, where a real
 /// WireGuard client exists. These cover the Swift side and the boundary: keys and strings going
 /// in, errors and stats coming back.
 @MainActor

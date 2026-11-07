@@ -1,12 +1,12 @@
-# Runs on a GitHub-hosted Mac, since building an iOS app needs Xcode. The repo is public, so its
-# macOS minutes cost nothing, and a hosted runner is thrown away after each job, so pull requests
-# from forks can run here too.
+# Runs on a GitHub-hosted Mac, since building an iOS app needs Xcode. In a private repository a
+# macOS minute counts ten times against the free Actions minutes, so it runs for pull requests and
+# main, not for every branch push. Actions > CI > Run workflow runs it on any branch.
 name: CI
 
-# Every branch push runs it, so a branch is green before it's merged into main.
 on:
   pull_request:
   push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -42,12 +42,12 @@ jobs:
         run: go -C WireGuard test -race ./...
       - name: Fuzz the UDP replies
         run: go -C WireGuard test -run '^$' -fuzz FuzzReplyPackets -fuzztime 30s ./...
-      # Fails only on a known vulnerability that Tether's code can reach. Pinned, like the actions.
+      # Fails only on a known vulnerability that Flux's code can reach. Pinned, like the actions.
       - name: Known vulnerabilities
         run: go -C WireGuard run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
       - name: Build the app
         run: |
           xcodegen generate --quiet
-          xcodebuild -project Tether.xcodeproj -scheme Tether \
+          xcodebuild -project Flux.xcodeproj -scheme Flux \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/dd" build | tail -3

@@ -2,7 +2,7 @@ import CryptoKit
 import Foundation
 import Security
 
-/// Where Tether listens. The hotspot always gives the iPhone 172.20.10.1.
+/// Where Flux listens. The hotspot always gives the iPhone 172.20.10.1.
 enum Hotspot {
     static let host = "172.20.10.1"
 }
@@ -129,7 +129,7 @@ struct WireGuardSetup: Codable, Equatable {
     }
 
     /// What the device imports, as a QR code or a .conf file. All traffic goes into the tunnel,
-    /// IPv6 too, so nothing slips past Tether onto the hotspot directly.
+    /// IPv6 too, so nothing slips past Flux onto the hotspot directly.
     func clientConfig(for peer: Peer) -> String {
         """
         [Interface]
@@ -150,7 +150,7 @@ struct WireGuardSetup: Codable, Equatable {
     /// WireGuard names the tunnel after the file, so keep it to letters, digits and dashes.
     static func fileName(for name: String) -> String {
         let parts = name.components(separatedBy: CharacterSet.alphanumerics.inverted).filter { !$0.isEmpty }
-        return (["Tether"] + parts).joined(separator: "-") + ".conf"
+        return (["Flux"] + parts).joined(separator: "-") + ".conf"
     }
 }
 
@@ -172,7 +172,7 @@ final class KeychainSecrets: SecretStore {
     private let query: [String: Any]
 
     /// `service` only changes in tests, which keep their own item apart from the app's.
-    init(service: String = "tether.wireguard") {
+    init(service: String = "flux.wireguard") {
         query = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,

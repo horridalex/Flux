@@ -127,7 +127,7 @@ enum ReadyCode {
         if let made, made.config == text, made.file.map({ FileManager.default.fileExists(atPath: $0.path) }) ?? false {
             return (made.qr, made.file)
         }
-        let code = (config: text, qr: QRCode.image(text), file: ConfigFile.write(text, named: "Tether"))
+        let code = (config: text, qr: QRCode.image(text), file: ConfigFile.write(text, named: "Flux"))
         made = code
         return (code.qr, code.file)
     }
@@ -160,7 +160,7 @@ enum QRCode {
 }
 
 /// The DNS servers devices added from now on use. A device already added keeps the ones in its
-/// own config, since Tether can't change what's imported there.
+/// own config, since Flux can't change what's imported there.
 struct DNSView: View {
     @ObservedObject var model: Model
     @State private var custom = ""

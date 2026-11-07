@@ -73,7 +73,7 @@ struct MainView: View {
             }
             // The status card says what this screen is, so the root drops the big title. It's still set,
             // because the screens pushed from here use it for their back button.
-            .navigationTitle("Tether")
+            .navigationTitle("Flux")
             .toolbar(.hidden, for: .navigationBar)
         }
     }
@@ -158,7 +158,7 @@ struct StatusCard: View {
 
     private var headline: String {
         switch model.wireGuardConnected.count {
-        case 0: return String(localized: "Hotspot is on, no device is using Tether yet")
+        case 0: return String(localized: "Hotspot is on, no device is using Flux yet")
         case 1: return String(localized: "Sharing with 1 device")
         case let n: return String(localized: "Sharing with \(n) devices")
         }
@@ -166,7 +166,7 @@ struct StatusCard: View {
 
     private var title: LocalizedStringKey {
         if sharing { return "Sharing" }
-        return model.running ? "Tether can't share yet" : "Turn on Personal Hotspot"
+        return model.running ? "Flux can't share yet" : "Turn on Personal Hotspot"
     }
 
     var body: some View {

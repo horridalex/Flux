@@ -2,9 +2,9 @@
 
 /* Main screen: the status card */
 "Sharing" = "공유 중";
-"Tether can't share yet" = "아직 공유할 수 없음";
+"Flux can't share yet" = "아직 공유할 수 없음";
 "Turn on Personal Hotspot" = "개인용 핫스팟을 켜세요";
-"Hotspot is on, no device is using Tether yet" = "핫스팟이 켜져 있지만 아직 Tether를 쓰는 기기가 없습니다";
+"Hotspot is on, no device is using Flux yet" = "핫스팟이 켜져 있지만 아직 Flux를 쓰는 기기가 없습니다";
 "Sharing with 1 device" = "기기 1대와 공유 중";
 "Sharing with %lld devices" = "기기 %lld대와 공유 중";
 "To stop, turn off Personal Hotspot." = "멈추려면 개인용 핫스팟을 끄세요.";
@@ -56,19 +56,19 @@
 "Enter one to four IPv4 addresses, separated by commas." = "IPv4 주소를 1~4개, 쉼표로 구분해 입력하세요.";
 
 /* The expiry warning */
-"Tether stops opening today. Install it again before then." = "Tether가 오늘 만료되어 열리지 않게 됩니다. 그 전에 다시 설치하세요.";
-"Tether stops opening tomorrow. Install it again before then." = "Tether가 내일 만료되어 열리지 않게 됩니다. 그 전에 다시 설치하세요.";
-"Tether stops opening in %lld days. Install it again before then." = "Tether가 %lld일 후 만료되어 열리지 않게 됩니다. 그 전에 다시 설치하세요.";
+"Flux stops opening today. Install it again before then." = "Flux가 오늘 만료되어 열리지 않게 됩니다. 그 전에 다시 설치하세요.";
+"Flux stops opening tomorrow. Install it again before then." = "Flux가 내일 만료되어 열리지 않게 됩니다. 그 전에 다시 설치하세요.";
+"Flux stops opening in %lld days. Install it again before then." = "Flux가 %lld일 후 만료되어 열리지 않게 됩니다. 그 전에 다시 설치하세요.";
 
 /* Shortcuts actions */
-"Start Tether" = "Tether 시작";
-"Is Tether Sharing?" = "Tether 공유 중인가요?";
-"Wakes Tether in the background, the same as opening it. It shares as soon as a device joins Personal Hotspot in the next 10 minutes. Put it after Set Personal Hotspot." = "Tether를 여는 것과 같이 백그라운드에서 깨웁니다. 앞으로 10분 안에 기기가 개인용 핫스팟에 연결되면 바로 공유를 시작합니다. '개인용 핫스팟 설정' 동작 다음에 넣으세요.";
-"True while Tether is sharing Personal Hotspot, for an If in a shortcut. It also says how many devices are connected." = "Tether가 개인용 핫스팟을 공유하는 동안 참(true)을 돌려주므로 단축어의 '만약'에 쓸 수 있습니다. 연결된 기기 수도 알려줍니다.";
-"Tether couldn't keep running in the background. Open it once." = "Tether가 백그라운드에서 계속 실행될 수 없었습니다. 한 번 열어 주세요.";
-"Tether is ready. It starts sharing when a device joins Personal Hotspot in the next %lld minutes." = "Tether가 준비되었습니다. 앞으로 %lld분 안에 기기가 개인용 핫스팟에 연결되면 공유를 시작합니다.";
+"Start Flux" = "Flux 시작";
+"Is Flux Sharing?" = "Flux 공유 중인가요?";
+"Wakes Flux in the background, the same as opening it. It shares as soon as a device joins Personal Hotspot in the next 10 minutes. Put it after Set Personal Hotspot." = "Flux를 여는 것과 같이 백그라운드에서 깨웁니다. 앞으로 10분 안에 기기가 개인용 핫스팟에 연결되면 바로 공유를 시작합니다. '개인용 핫스팟 설정' 동작 다음에 넣으세요.";
+"True while Flux is sharing Personal Hotspot, for an If in a shortcut. It also says how many devices are connected." = "Flux가 개인용 핫스팟을 공유하는 동안 참(true)을 돌려주므로 단축어의 '만약'에 쓸 수 있습니다. 연결된 기기 수도 알려줍니다.";
+"Flux couldn't keep running in the background. Open it once." = "Flux가 백그라운드에서 계속 실행될 수 없었습니다. 한 번 열어 주세요.";
+"Flux is ready. It starts sharing when a device joins Personal Hotspot in the next %lld minutes." = "Flux가 준비되었습니다. 앞으로 %lld분 안에 기기가 개인용 핫스팟에 연결되면 공유를 시작합니다.";
 "Personal Hotspot is on, but WireGuard isn't running. %@" = "개인용 핫스팟은 켜져 있지만 WireGuard가 실행되지 않고 있습니다. %@";
-"Tether is waiting for a device to join Personal Hotspot." = "Tether가 개인용 핫스팟에 기기가 연결되기를 기다리고 있습니다.";
-"Tether is sharing. No device is using it yet." = "Tether가 공유 중입니다. 아직 사용하는 기기는 없습니다.";
-"Tether is sharing with 1 device." = "Tether가 기기 1대와 공유 중입니다.";
-"Tether is sharing with %lld devices." = "Tether가 기기 %lld대와 공유 중입니다.";
+"Flux is waiting for a device to join Personal Hotspot." = "Flux가 개인용 핫스팟에 기기가 연결되기를 기다리고 있습니다.";
+"Flux is sharing. No device is using it yet." = "Flux가 공유 중입니다. 아직 사용하는 기기는 없습니다.";
+"Flux is sharing with 1 device." = "Flux가 기기 1대와 공유 중입니다.";
+"Flux is sharing with %lld devices." = "Flux가 기기 %lld대와 공유 중입니다.";

@@ -1,5 +1,5 @@
 import XCTest
-@testable import TetherCore
+@testable import FluxCore
 
 final class AppExpiryTests: XCTestCase {
     private let utc: Calendar = {
@@ -16,7 +16,7 @@ final class AppExpiryTests: XCTestCase {
         Data([0x30, 0x82, 0x0F, 0x00, 0x06, 0x09]) + Data("""
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0"><dict><key>Name</key><string>Tether</string>
+        <plist version="1.0"><dict><key>Name</key><string>Flux</string>
         <key>ExpirationDate</key><date>\(date)</date></dict></plist>
         """.utf8) + Data([0xA0, 0x82, 0x03, 0x00])
     }
@@ -38,18 +38,18 @@ final class AppExpiryTests: XCTestCase {
 
     func testTheWarningSaysWhenInDays() {
         XCTAssertEqual(AppExpiry.warning(expires: at(26), now: at(23, 12), calendar: utc),
-                       "Tether stops opening in 3 days. Install it again before then.")
+                       "Flux stops opening in 3 days. Install it again before then.")
         XCTAssertEqual(AppExpiry.warning(expires: at(26, 9), now: at(24, 20), calendar: utc),
-                       "Tether stops opening in 2 days. Install it again before then.", "counted in calendar days")
+                       "Flux stops opening in 2 days. Install it again before then.", "counted in calendar days")
         XCTAssertEqual(AppExpiry.warning(expires: at(26, 9), now: at(25, 22), calendar: utc),
-                       "Tether stops opening tomorrow. Install it again before then.")
+                       "Flux stops opening tomorrow. Install it again before then.")
         XCTAssertEqual(AppExpiry.warning(expires: at(26, 20), now: at(26, 8), calendar: utc),
-                       "Tether stops opening today. Install it again before then.")
+                       "Flux stops opening today. Install it again before then.")
     }
 
     /// Still running after the moment it expired: it won't open again once closed.
     func testPastTheDateItSaysToday() {
         XCTAssertEqual(AppExpiry.warning(expires: at(26, 8), now: at(26, 9), calendar: utc),
-                       "Tether stops opening today. Install it again before then.")
+                       "Flux stops opening today. Install it again before then.")
     }
 }

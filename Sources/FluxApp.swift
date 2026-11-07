@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct TetherApp: App {
+struct FluxApp: App {
     var body: some Scene {
         WindowGroup { MainView() }
     }

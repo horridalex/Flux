@@ -1,7 +1,7 @@
 import XCTest
 
 /// One device's screen (status, rename, remove) and the WireGuard problem section on the main screen.
-final class DeviceViewTests: TetherUITestCase {
+final class DeviceViewTests: FluxUITestCase {
     private let lockedText = "Its keys can't be read yet. Unlock this iPhone once."
     private let resetText = "Its saved keys can't be read. Start over with new keys to use it."
 
@@ -25,7 +25,7 @@ final class DeviceViewTests: TetherUITestCase {
     func testBackReturnsToTheMainScreen() {
         launch(.sharing)
         openDevice("iPad")
-        goBack(to: "Tether")
+        goBack(to: "Flux")
         waitUntilHittable(element("status.title"))
         XCTAssertTrue(element("device.iPad").waitForExistence(timeout: 5))
     }
@@ -41,7 +41,7 @@ final class DeviceViewTests: TetherUITestCase {
         field.tap()
         field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "MacBook".count) + "Work Mac\n")
         XCTAssertTrue(app.navigationBars["Work Mac"].waitForExistence(timeout: 5))
-        goBack(to: "Tether")
+        goBack(to: "Flux")
         XCTAssertTrue(reveal(element("device.Work Mac")).exists)
         XCTAssertFalse(element("device.MacBook").exists)
     }
@@ -55,7 +55,7 @@ final class DeviceViewTests: TetherUITestCase {
         app.buttons["Cancel"].firstMatch.tap()
         waitUntilGone(app.buttons["Remove"].firstMatch)
         XCTAssertTrue(app.navigationBars["iPad"].exists, "still on the device's screen")
-        goBack(to: "Tether")
+        goBack(to: "Flux")
         XCTAssertTrue(reveal(element("device.iPad")).exists)
         XCTAssertTrue(element("device.MacBook").exists)
     }

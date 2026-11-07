@@ -1,5 +1,5 @@
 import XCTest
-@testable import TetherCore
+@testable import FluxCore
 
 final class FormatTests: XCTestCase {
     func testSpeedUsesTheUnitOfASpeedTest() {

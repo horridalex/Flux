@@ -1,4 +1,4 @@
-// Package main is Tether's WireGuard server, built as a C archive and linked into the app.
+// Package main is Flux's WireGuard server, built as a C archive and linked into the app.
 //
 // wireguard-go decrypts what the devices send, a gVisor userspace TCP/IP stack ends their TCP
 // connections and UDP flows, and each one is made again with the iPhone's own sockets. So to the
@@ -81,7 +81,7 @@ type Peer struct {
 // which device is a router. The first time wireguard-go drops a device's packet for its source
 // address, that device gets these ranges, see noticeRouter. wireguard-go gives each range to one
 // peer only, so there is one router at a time: the newest one that sent for others. Its traffic is
-// the router's, since Tether can't tell the devices behind it apart. The tunnel's own addresses
+// the router's, since Flux can't tell the devices behind it apart. The tunnel's own addresses
 // are left out, or a reply to a removed device's address would go to the router.
 var routedNets = append(without(netip.MustParsePrefix("10.0.0.0/8"), tunnelNet),
 	netip.MustParsePrefix("172.16.0.0/12"),
@@ -715,7 +715,7 @@ func newStackTun() *stackTun {
 }
 
 func (t *stackTun) File() *os.File           { return nil }
-func (t *stackTun) Name() (string, error)    { return "tether", nil }
+func (t *stackTun) Name() (string, error)    { return "flux", nil }
 func (t *stackTun) MTU() (int, error)        { return MTU, nil }
 func (t *stackTun) Events() <-chan tun.Event { return t.events }
 func (t *stackTun) BatchSize() int           { return 1 }

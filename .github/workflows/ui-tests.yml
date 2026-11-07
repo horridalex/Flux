@@ -27,12 +27,12 @@ jobs:
       - name: Create a simulator
         run: |
           runtime=$(xcrun simctl list runtimes iOS -j | python3 -c 'import json, sys; r = [x for x in json.load(sys.stdin)["runtimes"] if x["isAvailable"]]; print(r[-1]["identifier"])')
-          id=$(xcrun simctl create "Tether CI $GITHUB_RUN_ID" com.apple.CoreSimulator.SimDeviceType.iPhone-16 "$runtime")
+          id=$(xcrun simctl create "Flux CI $GITHUB_RUN_ID" com.apple.CoreSimulator.SimDeviceType.iPhone-16 "$runtime")
           echo "SIM=$id" >> "$GITHUB_ENV"
       - name: UI tests
         run: |
           xcodegen generate --quiet
-          xcodebuild test -project Tether.xcodeproj -scheme Tether -destination "id=$SIM" \
+          xcodebuild test -project Flux.xcodeproj -scheme Flux -destination "id=$SIM" \
             -derivedDataPath "$RUNNER_TEMP/dd" -resultBundlePath "$RUNNER_TEMP/UITests.xcresult" \
             | grep -E "Test Case .* failed|Executed [0-9]+ tests|error:|TEST (SUCCEEDED|FAILED)"
       - name: Delete the simulator

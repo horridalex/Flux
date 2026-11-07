@@ -1,14 +1,14 @@
 import XCTest
-@testable import TetherCore
+@testable import FluxCore
 
 final class ShortcutReplyTests: XCTestCase {
     private typealias State = ShortcutReply.State
 
     func testStatusCountsTheConnectedDevices() {
-        XCTAssertEqual(ShortcutReply.status(State(running: false, connected: 0)), "Tether is waiting for a device to join Personal Hotspot.")
-        XCTAssertEqual(ShortcutReply.status(State(running: true, connected: 0)), "Tether is sharing. No device is using it yet.")
-        XCTAssertEqual(ShortcutReply.status(State(running: true, connected: 1)), "Tether is sharing with 1 device.")
-        XCTAssertEqual(ShortcutReply.status(State(running: true, connected: 3)), "Tether is sharing with 3 devices.")
+        XCTAssertEqual(ShortcutReply.status(State(running: false, connected: 0)), "Flux is waiting for a device to join Personal Hotspot.")
+        XCTAssertEqual(ShortcutReply.status(State(running: true, connected: 0)), "Flux is sharing. No device is using it yet.")
+        XCTAssertEqual(ShortcutReply.status(State(running: true, connected: 1)), "Flux is sharing with 1 device.")
+        XCTAssertEqual(ShortcutReply.status(State(running: true, connected: 3)), "Flux is sharing with 3 devices.")
     }
 
     func testStatusPassesOnWhyWireGuardIsNotRunning() {
@@ -25,15 +25,15 @@ final class ShortcutReplyTests: XCTestCase {
 
     func testStartWithoutTheHotspotSaysHowLongItWaits() {
         XCTAssertEqual(ShortcutReply.start(State(running: false, connected: 0), keptAlive: true),
-                       "Tether is ready. It starts sharing when a device joins Personal Hotspot in the next 10 minutes.")
+                       "Flux is ready. It starts sharing when a device joins Personal Hotspot in the next 10 minutes.")
     }
 
     func testStartWithTheHotspotOnSaysItShares() {
-        XCTAssertEqual(ShortcutReply.start(State(running: true, connected: 2), keptAlive: true), "Tether is sharing with 2 devices.")
+        XCTAssertEqual(ShortcutReply.start(State(running: true, connected: 2), keptAlive: true), "Flux is sharing with 2 devices.")
     }
 
-    func testStartThatCannotStayAliveAsksToOpenTether() {
+    func testStartThatCannotStayAliveAsksToOpenFlux() {
         XCTAssertEqual(ShortcutReply.start(State(running: true, connected: 0), keptAlive: false),
-                       "Tether couldn't keep running in the background. Open it once.")
+                       "Flux couldn't keep running in the background. Open it once.")
     }
 }
