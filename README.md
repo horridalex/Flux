@@ -95,6 +95,7 @@ iOS has no automation for "Personal Hotspot turned on", so let one shortcut turn
 - **Devices reach what the iPhone reaches**, private networks included. With a VPN on the iPhone, your devices use it too, so its networks are open to them and to everyone behind a travel router you added.
 - **The main screen** shows whether Flux is sharing, the QR code for the next device, your devices with Connected or Not connected, the current download and upload speed, and how much was used today. A device's own screen shows what it used today, and a travel router's includes every device behind it. Today's figures start again at midnight. To stop sharing, turn off Personal Hotspot.
 - **In English and Korean**, following the iPhone's language.
+- **Light or dark**: Settings > Appearance on the main screen picks Automatic (the iPhone's own setting, the default), Light or Dark.
 - **The traffic leaves as your iPhone's.** If your iPhone runs a VPN, shared traffic goes through that VPN too.
 - **Your carrier can still notice.** Flux hides where the traffic comes from, not what it is. A Mac's software updates or an iPad's apps still look like a Mac or an iPad to a carrier that looks closely. Many carrier contracts don't allow tethering workarounds, and a carrier can slow down or close a line that breaks them. Check yours. Using Flux is your call and your risk.
 - **Not for the App Store.** Apple doesn't allow the silent-audio trick, so you build and install Flux yourself.
