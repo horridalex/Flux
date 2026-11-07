@@ -1,5 +1,6 @@
 # Makes a release: runs CI, builds the unsigned IPA with this version, and puts it on the
-# repository's Releases page as Flux-<version>.ipa, where it stays for good.
+# repository's Releases page as Flux-<version>.ipa, where it stays for good. The notes are the
+# version's part of CHANGELOG.md (in Korean), then GitHub's list of pull requests.
 #
 # Two ways to start one:
 #   - Actions > Release > Run workflow, pick the branch (main), and type a version like 1.2.
@@ -112,17 +113,34 @@ jobs:
           cd "$RUNNER_TEMP/FluxIPA"
           /usr/bin/zip -qry "Flux-$VERSION.ipa" Payload
 
+      - name: Release notes from CHANGELOG.md
+        run: |
+          # The lines under "## <version>", up to the next "## ". Empty when the version has none.
+          awk -v v="$VERSION" '
+            /^## / { on = ($2 == v); next }
+            on { print }
+          ' CHANGELOG.md | sed -e '/./,$!d' > "$RUNNER_TEMP/notes.md"
+          if [[ -s $RUNNER_TEMP/notes.md ]]; then
+            cat "$RUNNER_TEMP/notes.md"
+          else
+            echo "::warning::CHANGELOG.md has no '## $VERSION', so the notes are only the list of pull requests"
+          fi
+
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           ipa="$RUNNER_TEMP/FluxIPA/Flux-$VERSION.ipa"
-          # Run again for the same version, it replaces the IPA instead of failing.
+          notes="$RUNNER_TEMP/notes.md"
+          # Run again for the same version, it replaces the IPA (and the notes, from CHANGELOG.md)
+          # instead of failing.
           if gh release view "v$VERSION" >/dev/null 2>&1; then
             gh release upload "v$VERSION" "$ipa" --clobber
+            if [[ -s $notes ]]; then gh release edit "v$VERSION" --notes-file "$notes"; fi
           else
+            # The CHANGELOG.md notes come first, then GitHub's list of pull requests.
             gh release create "v$VERSION" "$ipa" --target "$GITHUB_SHA" \
-              --title "Flux $VERSION" --generate-notes
+              --title "Flux $VERSION" --notes-file "$notes" --generate-notes
           fi
 
       - name: Upload build log

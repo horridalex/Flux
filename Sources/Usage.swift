@@ -73,21 +73,93 @@ struct UsageMeter {
     }
 }
 
-/// Where today's `Usage` is kept between launches.
+/// Where the last 31 days' `Usage` is kept between launches, today's included.
 struct UsageStore {
     var defaults: UserDefaults = .standard
-    private static let key = "usage.today"
+    private static let key = "usage.days"
+    /// Where 1.1 kept today's alone. Read once, so today's figures survive the update.
+    private static let oldKey = "usage.today"
+    static let daysKept = 31
 
-    func load(now: Date = Date()) -> Usage {
-        let today = Usage.day(of: now)
-        guard let data = defaults.data(forKey: Self.key),
-              let saved = try? JSONDecoder().decode(Usage.self, from: data), saved.day == today else {
-            return Usage(day: today)
+    /// The days kept, oldest first, none older than `daysKept` days before `now`.
+    func history(now: Date = Date(), calendar: Calendar = .current) -> [Usage] {
+        var days = (defaults.data(forKey: Self.key).flatMap { try? JSONDecoder().decode([Usage].self, from: $0) }) ?? []
+        if days.isEmpty, let data = defaults.data(forKey: Self.oldKey),
+           let old = try? JSONDecoder().decode(Usage.self, from: data) {
+            days = [old]
         }
-        return saved
+        let oldest = calendar.date(byAdding: .day, value: -(Self.daysKept - 1), to: now).map { Usage.day(of: $0, calendar: calendar) } ?? ""
+        return days.filter { $0.day >= oldest }.sorted { $0.day < $1.day }
     }
 
-    func save(_ usage: Usage) {
-        if let data = try? JSONEncoder().encode(usage) { defaults.set(data, forKey: Self.key) }
+    /// Today's figures so far, or none.
+    func load(now: Date = Date(), calendar: Calendar = .current) -> Usage {
+        let today = Usage.day(of: now, calendar: calendar)
+        return history(now: now, calendar: calendar).first { $0.day == today } ?? Usage(day: today)
+    }
+
+    /// Puts `usage` in for its day and lets the days past `daysKept` go.
+    func save(_ usage: Usage, now: Date = Date(), calendar: Calendar = .current) {
+        var days = history(now: now, calendar: calendar).filter { $0.day != usage.day }
+        days.append(usage)
+        days.sort { $0.day < $1.day }
+        if let data = try? JSONEncoder().encode(days) {
+            defaults.set(data, forKey: Self.key)
+            defaults.removeObject(forKey: Self.oldKey)
+        }
+    }
+}
+
+extension Usage {
+    /// The month a day is in, as yyyy-MM.
+    var month: String { String(day.prefix(7)) }
+
+    /// What `days` add up to in the month of `today`, with `today`'s figures as they are now rather
+    /// than as last saved.
+    static func monthTotal(_ days: [Usage], today: Usage) -> Bytes {
+        var total = today.all
+        for day in days where day.month == today.month && day.day != today.day {
+            total.add(up: day.all.up, down: day.all.down)
+        }
+        return total
+    }
+}
+
+/// A monthly data limit, and when to warn about it: at 80 % and at 100 %, once each a month.
+struct UsageLimit: Equatable {
+    /// Bytes a month. Zero means no limit.
+    var bytes: UInt64
+    static let warnings = [80, 100]
+
+    /// The warning to give now, if any: the highest level `used` has reached that wasn't given this
+    /// month. `given` is the highest given this month, 0 for none.
+    func warning(used: UInt64, given: Int) -> Int? {
+        guard bytes > 0 else { return nil }
+        let percent = Double(used) / Double(bytes) * 100
+        return Self.warnings.last { Double($0) <= percent && $0 > given }
+    }
+}
+
+/// Where the limit, and the warnings already given this month, are kept.
+struct UsageLimitStore {
+    var defaults: UserDefaults = .standard
+    private static let bytesKey = "usage.limitBytes"
+    private static let givenKey = "usage.limitWarned" // "yyyy-MM:80"
+
+    var limit: UsageLimit {
+        get { UsageLimit(bytes: UInt64(max(0, defaults.integer(forKey: Self.bytesKey)))) }
+        nonmutating set { defaults.set(Int(clamping: newValue.bytes), forKey: Self.bytesKey) }
+    }
+
+    /// The highest warning given in `month`, 0 for none.
+    func given(in month: String) -> Int {
+        let saved = defaults.string(forKey: Self.givenKey) ?? ""
+        let parts = saved.split(separator: ":")
+        guard parts.count == 2, parts[0] == month else { return 0 }
+        return Int(parts[1]) ?? 0
+    }
+
+    func setGiven(_ level: Int, in month: String) {
+        defaults.set("\(month):\(level)", forKey: Self.givenKey)
     }
 }

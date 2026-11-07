@@ -1,0 +1,74 @@
+# Actions > Screenshots > Run workflow. Takes the README's screenshots from the demo scenarios on
+# an iPhone simulator (UITests/ScreenshotTests.swift), and puts them in docs/ on the `screenshots`
+# branch, to bring into main with a pull request. They're also an artifact of the run.
+name: Screenshots
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write # to push the screenshots branch
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  screenshots:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: WireGuard/go.mod
+          cache-dependency-path: WireGuard/go.sum
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Create a simulator
+        run: |
+          runtime=$(xcrun simctl list runtimes iOS -j | python3 -c 'import json, sys; r = [x for x in json.load(sys.stdin)["runtimes"] if x["isAvailable"]]; print(r[-1]["identifier"])')
+          id=$(xcrun simctl create "Flux shots $GITHUB_RUN_ID" com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro "$runtime")
+          echo "SIM=$id" >> "$GITHUB_ENV"
+          xcrun simctl boot "$id"
+          # A tidy status bar: full battery, full signal, 9:41.
+          xcrun simctl status_bar "$id" override --time 9:41 --batteryState charged --batteryLevel 100 \
+            --cellularMode active --cellularBars 4 --wifiBars 3
+      - name: Take the screenshots
+        env:
+          TEST_RUNNER_FLUX_SCREENSHOTS: "1" # FLUX_SCREENSHOTS in the tests
+        run: |
+          xcodegen generate --quiet
+          xcodebuild test -project Flux.xcodeproj -scheme Flux -destination "id=$SIM" \
+            -only-testing:FluxUITests/ScreenshotTests \
+            -derivedDataPath "$RUNNER_TEMP/dd" -resultBundlePath "$RUNNER_TEMP/shots.xcresult" \
+            | grep -E "Test Case .* (passed|failed)|error:|TEST (SUCCEEDED|FAILED)"
+      - name: Export them to docs/
+        run: |
+          xcrun xcresulttool export attachments --path "$RUNNER_TEMP/shots.xcresult" --output-path "$RUNNER_TEMP/out"
+          # The manifest pairs each exported file with the attachment's name, like main-dark.
+          python3 - "$RUNNER_TEMP/out" docs <<'PY'
+          import json, os, shutil, sys
+          src, dst = sys.argv[1], sys.argv[2]
+          os.makedirs(dst, exist_ok=True)
+          for test in json.load(open(os.path.join(src, "manifest.json"))):
+              for a in test.get("attachments", []):
+                  name = a["suggestedHumanReadableName"].split("_")[0]
+                  shutil.copy(os.path.join(src, a["exportedFileName"]), os.path.join(dst, name + ".png"))
+                  print("docs/" + name + ".png")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: screenshots
+          path: docs/*.png
+      - name: Push them to the screenshots branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B screenshots
+          git add docs/*.png
+          git commit -m "Screenshots from $GITHUB_SHA"
+          git push --force origin screenshots
+      - name: Delete the simulator
+        if: always() && env.SIM != ''
+        run: xcrun simctl delete "$SIM"
