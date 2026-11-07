@@ -18,9 +18,11 @@ class FluxUITestCase: XCTestCase {
     /// Launches Flux in a demo scenario, in English with US formats so every text is stable.
     /// Pass `scenario: nil` for a normal launch.
     @discardableResult
-    func launch(_ scenario: Scenario?, arguments: [String] = []) -> XCUIApplication {
+    func launch(_ scenario: Scenario?, arguments: [String] = [], korean: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
-        var args = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        var args = korean
+            ? ["-AppleLanguages", "(ko)", "-AppleLocale", "ko_KR"]
+            : ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         if let scenario { args += ["-FluxDemo", scenario.rawValue] }
         app.launchArguments = args + arguments
         app.launch()

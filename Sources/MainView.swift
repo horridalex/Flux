@@ -7,9 +7,9 @@ struct MainView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                // A bento grid of glass tiles: the status across the top, the numbers side by side,
-                // then the devices, the QR code for the next one, and the settings.
-                VStack(spacing: 14) {
+                // A column of cards: the status, the speed, today's usage, the devices, adding one,
+                // and the settings.
+                VStack(spacing: 12) {
                     StatusCard(model: model)
 
                     if let warning = model.expiryWarning {
@@ -24,46 +24,28 @@ struct MainView: View {
                         }
                     }
 
-                    // Above the QR code, so a reason it doesn't work and the way out are both here.
+                    // Above adding a device, so a reason it doesn't work and the way out are both here.
                     WireGuardProblemSection(model: model)
 
                     if model.sharing {
-                        Tile(title: "Now") {
+                        Tile(title: "Now", subtitle: "Measured every second") {
                             SpeedRow(down: model.downSpeed, up: model.upSpeed)
                         }
                     }
 
                     if model.sharing || model.usageThisMonth.total > 0 {
-                        // The card opens the last 30 days and the monthly limit.
-                        NavigationLink { UsageView(model: model) } label: {
-                            UsageSummary(bytes: model.usageToday.all, month: model.usageThisMonth.total,
-                                         limit: model.usageLimit.bytes)
-                                .padding(20)
-                                .card()
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("usage.today")
+                        UsageCard(model: model)
                     }
 
                     if !model.wireGuardPeers.isEmpty {
-                        Tile(title: "Devices") {
-                            VStack(spacing: 0) {
-                                ForEach(Array(model.wireGuardPeers.enumerated()), id: \.element.id) { index, peer in
-                                    if index > 0 { Divider() }
+                        Tile(title: "Devices", subtitle: "Tap a device to rename or remove it") {
+                            VStack(spacing: 4) {
+                                ForEach(model.wireGuardPeers) { peer in
                                     NavigationLink { DeviceView(model: model, peer: peer) } label: {
-                                        TileRow {
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text(peer.name)
-                                                // While it moves data, how fast: who's using the hotspot most.
-                                                if let speed = model.deviceSpeeds[peer.address], speed.down + speed.up >= 1000 {
-                                                    DeviceSpeedText(speed: speed)
-                                                }
-                                            }
-                                            Spacer()
-                                            ConnectedLabel(connected: model.wireGuardConnected.contains(peer.address))
-                                                .font(.subheadline)
-                                        }
+                                        DeviceRow(peer: peer, connected: model.wireGuardConnected.contains(peer.address),
+                                                  speed: model.deviceSpeeds[peer.address])
                                     }
+                                    .buttonStyle(.plain)
                                     .accessibilityIdentifier("device.\(peer.name)")
                                 }
                             }
@@ -72,32 +54,28 @@ struct MainView: View {
 
                     AddDeviceSection(model: model, first: model.wireGuardPeers.isEmpty)
 
-                    Tile(title: "Settings") {
-                        VStack(spacing: 0) {
-                            NavigationLink { AppearanceView() } label: {
-                                TileRow {
-                                    Text("Appearance")
-                                    Spacer()
-                                    Text(appearance.title)
-                                        .foregroundStyle(.secondary)
-                                }
+                    VStack(spacing: 4) {
+                        NavigationLink { AppearanceView() } label: {
+                            SettingRow(icon: "circle.lefthalf.filled", title: "Appearance") {
+                                Text(appearance.title)
                             }
-                            .accessibilityIdentifier("settings.appearance")
-                            Divider()
-                            NavigationLink { DNSView(model: model) } label: {
-                                TileRow {
-                                    Text("DNS")
-                                    Spacer()
-                                    Text(verbatim: model.wireGuardDNS)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
-                                }
-                            }
-                            .accessibilityIdentifier("settings.dns")
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("settings.appearance")
+                        NavigationLink { DNSView(model: model) } label: {
+                            SettingRow(icon: "globe", title: "DNS") {
+                                Text(verbatim: model.wireGuardDNS).lineLimit(1)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("settings.dns")
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .card()
                 }
-                .padding(16)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
                 .animation(.smooth, value: model.sharing)
             }
             .background(Brand.page)
@@ -109,74 +87,96 @@ struct MainView: View {
     }
 }
 
-/// A row in a tile that opens another screen: the label, then a chevron like a List's.
-struct TileRow<Content: View>: View {
-    @ViewBuilder var content: Content
+/// A device in the list: its icon tile, its name, and whether it's connected and how fast it goes.
+struct DeviceRow: View {
+    let peer: WireGuardSetup.Peer
+    let connected: Bool
+    let speed: DeviceSpeed?
 
-    var body: some View {
-        HStack {
-            content
-            Image(systemName: "chevron.right")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.tertiary)
-                .accessibilityHidden(true)
+    /// A symbol from the name people gave it, a screen otherwise.
+    private var symbol: String {
+        let name = peer.name.lowercased()
+        if name.contains("ipad") { return "ipad" }
+        if name.contains("iphone") { return "iphone" }
+        if name.contains("mac") { return "laptopcomputer" }
+        if name.contains("router") || name.contains("gl.inet") || name.contains("unifi") || name.contains("라우터") { return "wifi.router" }
+        return "display"
+    }
+
+    private var detail: Text {
+        guard connected else { return Text("Not connected") }
+        if let speed, speed.down + speed.up >= 1000 {
+            return Text("Connected · \(Format.speed(speed.down + speed.up))")
         }
-        .foregroundStyle(Color.primary)
-        .padding(.vertical, 10)
-        .contentShape(Rectangle())
-    }
-}
-
-/// Today's total, big, with the download and upload under it, and this month's, for the main
-/// screen's tile.
-struct UsageSummary: View {
-    let bytes: Usage.Bytes
-    /// This month so far, and the monthly limit, 0 for none.
-    let month: UInt64
-    let limit: UInt64
-
-    private var monthText: Text {
-        limit > 0
-            ? Text("This month \(Format.bytes(month)) of \(Format.bytes(limit))")
-            : Text("This month \(Format.bytes(month))")
+        return Text("Connected")
     }
 
     var body: some View {
-        // The title and this month on the left, today's total big on the right.
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Used today")
-                    .font(.headline)
-                monthText
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(limit > 0 && month >= limit ? Color.orange : Color.primary)
+        HStack(spacing: 14) {
+            IconTile(systemName: symbol, color: connected ? Brand.accent : Brand.subtext)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(peer.name)
+                    .font(.body.weight(.bold))
+                detail
+                    .font(.subheadline)
+                    .foregroundStyle(Brand.subtext)
             }
-            Spacer(minLength: 8)
-            Text(verbatim: Format.bytes(bytes.total))
-                .font(.system(size: 28, weight: .heavy).monospacedDigit())
-                .contentTransition(.numericText())
-                .animation(.snappy, value: bytes.total)
-            Image(systemName: "chevron.right")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.tertiary)
+            Spacer(minLength: 0)
         }
+        .padding(.vertical, 8)
         .contentShape(Rectangle())
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Used today"))
-        .accessibilityValue(Text("\(Format.bytes(bytes.total)), download \(Format.bytes(bytes.down)), upload \(Format.bytes(bytes.up))"))
-        .accessibilityHint(Text("Shows the last 30 days and the monthly limit"))
+        .accessibilityElement(children: .combine)
     }
 }
 
-/// A device's speed now, small, under its name.
-struct DeviceSpeedText: View {
-    let speed: DeviceSpeed
+/// A settings row: an icon tile, the name, and the current value in grey.
+struct SettingRow<Value: View>: View {
+    let icon: String
+    let title: LocalizedStringKey
+    @ViewBuilder var value: Value
 
     var body: some View {
-        Text("\(Image(systemName: "arrow.down")) \(Format.speed(speed.down))  \(Image(systemName: "arrow.up")) \(Format.speed(speed.up))")
-            .font(.caption.monospacedDigit())
-            .foregroundStyle(.secondary)
-            .accessibilityLabel(Text("Download \(Format.speed(speed.down)), upload \(Format.speed(speed.up))"))
+        HStack(spacing: 14) {
+            IconTile(systemName: icon, color: Brand.subtext, size: 40)
+            Text(title)
+                .font(.body.weight(.semibold))
+            Spacer(minLength: 8)
+            value
+                .foregroundStyle(Brand.subtext)
+        }
+        .padding(.vertical, 8)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Today's usage: a chart tile, the figure, and a button to the last 30 days and the monthly limit.
+struct UsageCard: View {
+    @ObservedObject var model: Model
+
+    var body: some View {
+        HStack(spacing: 14) {
+            IconTile(systemName: "chart.bar.fill", color: Brand.accent)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Used today")
+                    .font(.subheadline)
+                    .foregroundStyle(Brand.subtext)
+                Text(verbatim: Format.bytes(model.usageToday.all.total))
+                    .font(.title3.weight(.heavy).monospacedDigit())
+                    .contentTransition(.numericText())
+                    .animation(.snappy, value: model.usageToday.all.total)
+            }
+            .accessibilityElement(children: .combine)
+            Spacer(minLength: 8)
+            NavigationLink { UsageView(model: model) } label: {
+                Text("History")
+            }
+            .buttonStyle(ViewButtonStyle())
+            .accessibilityIdentifier("usage.today")
+            .accessibilityHint(Text("Shows the last 30 days and the monthly limit"))
+        }
+        .padding(24)
+        .card()
     }
 }
 
@@ -186,36 +186,36 @@ struct SpeedRow: View {
     let up: Double
 
     var body: some View {
-        // Side by side: download on the left, upload on the right, a hairline between.
-        HStack(alignment: .top, spacing: 16) {
-            column("Download", arrow: "arrow.down", bps: down, color: Direction.download)
-            Rectangle()
-                .fill(Color(uiColor: .separator))
-                .frame(width: 1)
-            column("Upload", arrow: "arrow.up", bps: up, color: Direction.upload)
+        HStack(spacing: 12) {
+            box("Download", bps: down)
+            box("Upload", bps: up)
         }
-        .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Download \(Format.speed(down)), upload \(Format.speed(up))")
         .accessibilityIdentifier("traffic.speeds")
     }
 
-    private func column(_ title: LocalizedStringKey, arrow: String, bps: Double, color: Color) -> some View {
+    private func box(_ title: LocalizedStringKey, bps: Double) -> some View {
         let parts = Format.speedParts(bps)
-        return VStack(alignment: .leading, spacing: 2) {
-            Label(title, systemImage: arrow)
-                .font(.subheadline.weight(.medium))
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.subheadline)
+                .foregroundStyle(Brand.subtext)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(verbatim: parts.number)
-                    .font(.system(size: 30, weight: .heavy, design: .default).monospacedDigit())
+                    .font(.system(size: 28, weight: .heavy).monospacedDigit())
                     .contentTransition(.numericText())
                     .animation(.snappy, value: bps)
                 Text(verbatim: parts.unit)
                     .font(.subheadline.weight(.bold))
+                    .foregroundStyle(Brand.subtext)
             }
-            .foregroundStyle(color)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Brand.tile, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 
@@ -259,8 +259,6 @@ struct StatusCard: View {
 
     private var tint: Color { model.sharing ? .green : .orange }
     private var sharing: Bool { model.sharing }
-    /// Grows with the text size, like the title under it.
-    @ScaledMetric(relativeTo: .title) private var iconSize: CGFloat = 26
 
 
     /// Opens Settings at its main screen, where Personal Hotspot is near the top. Nothing goes
@@ -278,6 +276,16 @@ struct StatusCard: View {
         }
     }
 
+    /// The headline with its number in blue, "1 device is connected" with the 1 blue.
+    private var headlineHighlighted: AttributedString {
+        var text = AttributedString(headline)
+        let count = model.wireGuardConnected.count
+        if count > 0, let range = text.range(of: String(count)) {
+            text[range].foregroundColor = Brand.accent
+        }
+        return text
+    }
+
     private var title: LocalizedStringKey {
         if sharing { return "Sharing" }
         return model.running ? "Flux can't share yet" : "Turn on Personal Hotspot"
@@ -292,25 +300,22 @@ struct StatusCard: View {
                     .accessibilityHidden(true)
                 Text(title)
                     .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Brand.subtext)
                     .accessibilityIdentifier("status.title")
-                Spacer()
-                Image(systemName: "water.waves")
-                    .font(.system(size: iconSize, weight: .semibold))
-                    .foregroundStyle(Brand.accent)
-                    .symbolEffect(.variableColor.iterative, isActive: sharing)
-                    .accessibilityHidden(true)
             }
             if sharing {
-                Text(headline)
-                    .font(.title2.bold())
+                Text(headlineHighlighted)
+                    .font(.title2.weight(.heavy))
+                    .accessibilityLabel(headline)
                     .accessibilityIdentifier("status.headline")
                 Text("To stop, turn off Personal Hotspot.")
                     .font(.subheadline)
+                    .foregroundStyle(Brand.subtext)
                     .accessibilityIdentifier("status.stopHint")
             } else if model.running {
                 // The WireGuard card under this one says why, and what to do.
                 Text("Personal Hotspot is on, but WireGuard isn't running.")
-                    .font(.title3.bold())
+                    .font(.title3.weight(.heavy))
                     .accessibilityIdentifier("status.headline")
             } else {
                 Button(action: Self.openHotspotSettings) {
@@ -325,7 +330,7 @@ struct StatusCard: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(20)
+        .padding(24)
         .card(tint: sharing ? nil : .orange)
         .animation(.smooth, value: sharing)
     }

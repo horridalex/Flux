@@ -1,25 +1,25 @@
 /* Korean. The keys are the English text in the code. %@ is text, %lld a number. */
 
 /* Main screen: the status card */
-"Sharing" = "공유 중";
-"Flux can't share yet" = "아직 공유할 수 없음";
+"Sharing" = "개인용 핫스팟 공유 중";
+"Flux can't share yet" = "아직 공유할 수 없어요";
 "Turn on Personal Hotspot" = "개인용 핫스팟을 켜세요";
-"Hotspot is on, no device is using Flux yet" = "핫스팟이 켜져 있지만 아직 Flux를 쓰는 기기가 없습니다";
-"Sharing with 1 device" = "기기 1대와 공유 중";
-"Sharing with %lld devices" = "기기 %lld대와 공유 중";
-"To stop, turn off Personal Hotspot." = "멈추려면 개인용 핫스팟을 끄세요.";
+"Hotspot is on, no device is using Flux yet" = "아직 연결된 기기가 없어요";
+"Sharing with 1 device" = "기기 1대가 연결되었어요";
+"Sharing with %lld devices" = "기기 %lld대가 연결되었어요";
+"To stop, turn off Personal Hotspot." = "멈추려면 개인용 핫스팟을 끄세요";
 "Personal Hotspot is on, but WireGuard isn't running." = "개인용 핫스팟은 켜져 있지만 WireGuard가 실행되지 않고 있습니다.";
 "Settings > Personal Hotspot > Allow Others to Join" = "설정 > 개인용 핫스팟 > 다른 사람의 연결 허용";
 "Opens Settings" = "설정을 엽니다";
 
 /* Main screen: speeds and usage */
 "Download %@, upload %@" = "다운로드 %@, 업로드 %@";
-"Used today" = "오늘 사용량";
-"Now" = "현재 속도";
+"Used today" = "오늘 쓴 데이터";
+"Now" = "지금 속도";
 "%@, download %@, upload %@" = "%@, 다운로드 %@, 업로드 %@";
 
 /* Main screen: devices and the QR code */
-"Devices" = "기기";
+"Devices" = "내 기기";
 "Connected" = "연결됨";
 "Not connected" = "연결 안 됨";
 "Add a device" = "기기 추가";
@@ -107,8 +107,8 @@
 "Wakes Flux, so it shares when a device joins Personal Hotspot." = "기기가 개인용 핫스팟에 연결되면 공유하도록 Flux를 깨웁니다.";
 
 /* The speed card's two sides */
-"Download" = "다운로드";
-"Upload" = "업로드";
+"Download" = "받는 속도";
+"Upload" = "보내는 속도";
 
 /* Settings > Appearance */
 "Appearance" = "화면 모드";
@@ -116,3 +116,12 @@
 "Light" = "라이트";
 "Dark" = "다크";
 "Automatic follows the iPhone's setting." = "자동은 iPhone 설정을 따릅니다.";
+
+/* The main screen's cards */
+"Measured every second" = "1초마다 새로 재요";
+"Tap a device to rename or remove it" = "기기를 눌러 이름을 바꾸거나 지울 수 있어요";
+"Connected · %@" = "연결됨 · %@";
+"History" = "기록 보기";
+"Scan the QR code to connect right away" = "QR 코드를 찍으면 바로 연결돼요";
+"Show QR" = "QR 보기";
+"Done" = "완료";

@@ -85,7 +85,7 @@ final class DeviceViewTests: FluxUITestCase {
         XCTAssertEqual(banner.label, lockedText)
         XCTAssertTrue(app.staticTexts["WireGuard isn't running"].exists)
         XCTAssertFalse(element("wireguard.reset").exists, "a locked Keychain gets better by unlocking, not by starting over")
-        XCTAssertFalse(element("add.qr").exists)
+        XCTAssertFalse(element("add.showQR").exists)
         XCTAssertFalse(element("add.share").exists)
     }
 
@@ -93,7 +93,7 @@ final class DeviceViewTests: FluxUITestCase {
         launch(.wireGuardNeedsReset)
         XCTAssertEqual(staticText("wireguard.problem").label, resetText)
         XCTAssertEqual(reveal(element("wireguard.reset")).label, "Start over with new keys")
-        XCTAssertFalse(element("add.qr").exists)
+        XCTAssertFalse(element("add.showQR").exists)
     }
 
     func testStartingOverClearsTheProblemAndShowsTheQRCode() {
@@ -101,7 +101,7 @@ final class DeviceViewTests: FluxUITestCase {
         reveal(element("wireguard.reset")).tap()
         waitUntilGone(element("wireguard.problem"))
         XCTAssertFalse(element("wireguard.reset").exists)
-        XCTAssertTrue(reveal(element("add.qr")).exists)
+        XCTAssertTrue(reveal(element("add.showQR")).exists)
         XCTAssertTrue(app.staticTexts["Add a device"].exists, "no device yet after starting over")
     }
 }

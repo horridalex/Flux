@@ -1,31 +1,39 @@
 import XCTest
 
-/// Adding a device: the QR code, the shared file and the steps that are always on the main screen.
+/// Adding a device: the row on the main screen, and the QR code, the shared file and the steps its
+/// Show QR button opens.
 final class AddDeviceTests: FluxUITestCase {
+    /// Opens the sheet with the QR code.
+    private func openCode() {
+        reveal(element("add.showQR")).tap()
+        XCTAssertTrue(element("add.qr").waitForExistence(timeout: 5), "the QR code sheet did not open")
+    }
+
     private let steps = "Install WireGuard on it, tap + > Create from QR code and scan this. Then edit the tunnel and turn On-Demand on for this iPhone's hotspot only. A travel router imports the file and turns its VPN on."
 
     func testBeforeAnyDeviceTheMainScreenShowsTheQRCodeTheFileAndTheSteps() {
         launch(.waiting)
-        XCTAssertTrue(reveal(element("add.qr")).exists)
+        XCTAssertTrue(app.staticTexts["Add a device"].exists)
+        openCode()
         XCTAssertEqual(element("add.qr").label, "QR code for the next device")
         let share = reveal(element("add.share"))
         XCTAssertTrue(share.label.contains("Share as a file, for a Mac or a router"), share.label)
         XCTAssertEqual(reveal(element("add.steps")).label, steps)
-        XCTAssertTrue(app.staticTexts["Add a device"].exists)
         XCTAssertFalse(app.staticTexts["Add another device"].exists)
     }
 
     func testTheQRCodeShowsWithTheHotspotOnButNoDevice() {
         launch(.noDevices)
-        XCTAssertTrue(reveal(element("add.qr")).exists)
         XCTAssertTrue(app.staticTexts["Add a device"].exists)
+        openCode()
     }
 
     func testOnceADeviceExistsTheHeaderSaysAddAnotherDevice() {
         launch(.sharing)
-        XCTAssertTrue(reveal(element("add.qr")).exists, "the code stays for the next device")
+        XCTAssertTrue(reveal(element("add.showQR")).exists, "the code stays for the next device")
         XCTAssertTrue(app.staticTexts["Add another device"].exists)
         XCTAssertFalse(app.staticTexts["Add a device"].exists)
+        openCode()
         XCTAssertTrue(reveal(element("add.share")).exists)
         XCTAssertTrue(reveal(element("add.steps")).exists)
     }

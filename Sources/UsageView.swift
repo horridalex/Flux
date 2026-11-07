@@ -20,7 +20,7 @@ struct UsageView: View {
                         .font(.largeTitle.weight(.bold).monospacedDigit())
                     if model.usageLimit.bytes > 0 {
                         ProgressView(value: min(1, Double(model.usageThisMonth.total) / Double(model.usageLimit.bytes)))
-                            .tint(model.usageThisMonth.total >= model.usageLimit.bytes ? .orange : Brand.accent)
+                            .tint(model.usageThisMonth.total >= model.usageLimit.bytes ? .orange : Brand.action)
                         Text("of \(Format.bytes(model.usageLimit.bytes)) this month")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)

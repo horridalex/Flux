@@ -1,44 +1,89 @@
 import CoreImage.CIFilterBuiltins
 import SwiftUI
 
-/// The QR code for the next device, always on the main screen. It's the ready device's config: the
-/// first time something connects with it, that device is listed and a new code takes its place.
+/// Adding the next device: a row on the main screen whose button opens its QR code. The code is the
+/// ready device's config: the first time something connects with it, that device is listed and a
+/// new code takes its place.
 struct AddDeviceSection: View {
     @ObservedObject var model: Model
     let first: Bool
+    @State private var showingCode = false
 
     var body: some View {
-        if let ready = model.wireGuardReady {
-            let code = ReadyCode.for(config: model.wireGuardConfig(for: ready))
-            Tile(title: first ? LocalizedStringKey("Add a device") : LocalizedStringKey("Add another device")) {
-                if let qr = code.qr {
-                    // Black on white whatever the theme, with a quiet zone, so any camera reads it.
-                    Image(uiImage: qr)
-                        .interpolation(.none)
-                        .resizable()
-                        .scaledToFit()
-                        .padding(14)
-                        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        .frame(maxWidth: 240)
-                        .frame(maxWidth: .infinity)
-                        .accessibilityLabel("QR code for the next device")
-                        .accessibilityIdentifier("add.qr")
+        if model.wireGuardReady != nil {
+            HStack(spacing: 14) {
+                IconTile(systemName: "plus", color: Brand.accent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(first ? LocalizedStringKey("Add a device") : LocalizedStringKey("Add another device"))
+                        .font(.body.weight(.bold))
+                    Text("Scan the QR code to connect right away")
+                        .font(.subheadline)
+                        .foregroundStyle(Brand.subtext)
                 }
-                if let file = code.file {
-                    ShareLink(item: file) {
-                        Label("Share as a file, for a Mac or a router", systemImage: "square.and.arrow.up")
-                            .font(.subheadline.weight(.semibold))
-                            .frame(maxWidth: .infinity)
+                Spacer(minLength: 8)
+                Button("Show QR") { showingCode = true }
+                    .buttonStyle(ViewButtonStyle())
+                    .accessibilityIdentifier("add.showQR")
+            }
+            .padding(24)
+            .card()
+            .sheet(isPresented: $showingCode) {
+                AddDeviceSheet(model: model, first: first)
+            }
+        }
+    }
+}
+
+/// The ready device's QR code, its file for a Mac or a router, and the steps.
+struct AddDeviceSheet: View {
+    @ObservedObject var model: Model
+    let first: Bool
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                if let ready = model.wireGuardReady {
+                    let code = ReadyCode.for(config: model.wireGuardConfig(for: ready))
+                    VStack(spacing: 20) {
+                        if let qr = code.qr {
+                            // Black on white whatever the theme, with a quiet zone, so any camera reads it.
+                            Image(uiImage: qr)
+                                .interpolation(.none)
+                                .resizable()
+                                .scaledToFit()
+                                .padding(16)
+                                .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                                .frame(maxWidth: 280)
+                                .accessibilityLabel("QR code for the next device")
+                                .accessibilityIdentifier("add.qr")
+                        }
+                        Text("Install WireGuard on it, tap + > Create from QR code and scan this. Then edit the tunnel and turn On-Demand on for this iPhone's hotspot only. A travel router imports the file and turns its VPN on.")
+                            .font(.subheadline)
+                            .foregroundStyle(Brand.subtext)
+                            .accessibilityIdentifier("add.steps")
+                        if let file = code.file {
+                            ShareLink(item: file) {
+                                Label("Share as a file, for a Mac or a router", systemImage: "square.and.arrow.up")
+                            }
+                            .buttonStyle(ActionButtonStyle(fullWidth: true))
+                            .accessibilityIdentifier("add.share")
+                        }
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .tint(Brand.accent)
-                    .accessibilityIdentifier("add.share")
+                    .padding(24)
+                } else {
+                    // Claimed while open: the next code is on its way.
+                    ProgressView().padding(40)
                 }
-                Text("Install WireGuard on it, tap + > Create from QR code and scan this. Then edit the tunnel and turn On-Demand on for this iPhone's hotspot only. A travel router imports the file and turns its VPN on.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .accessibilityIdentifier("add.steps")
+            }
+            .background(Brand.page)
+            .navigationTitle(first ? LocalizedStringKey("Add a device") : LocalizedStringKey("Add another device"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                        .accessibilityIdentifier("add.done")
+                }
             }
         }
     }
@@ -110,14 +155,17 @@ struct DeviceView: View {
                         ShareLink(item: file) {
                             Label("Share as a file, for a Mac or a router", systemImage: "square.and.arrow.up")
                         }
+                        .buttonStyle(ActionButtonStyle())
                     }
                     Button("Hide QR code") { self.code = nil }
+                        .buttonStyle(ViewButtonStyle())
                 } else {
                     Button {
                         showCode()
                     } label: {
                         Label("Show QR code", systemImage: "qrcode")
                     }
+                    .buttonStyle(ViewButtonStyle())
                     .accessibilityIdentifier("device.showQR")
                 }
             } header: {
@@ -266,6 +314,7 @@ struct DNSView: View {
                     .onSubmit(useCustom)
                     .accessibilityIdentifier("dns.custom")
                 Button("Use these servers", action: useCustom)
+                    .buttonStyle(ActionButtonStyle())
                     .disabled(custom.trimmingCharacters(in: .whitespaces).isEmpty)
             } header: {
                 Text("Other servers")

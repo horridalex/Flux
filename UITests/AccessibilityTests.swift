@@ -111,7 +111,8 @@ final class AccessibilityTests: FluxUITestCase {
         launch(.sharing, arguments: accessibilityXL)
         XCTAssertTrue(reveal(element("device.iPad"), maxSwipes: 30).isHittable)
         XCTAssertTrue(reveal(element("device.MacBook"), maxSwipes: 30).isHittable)
-        XCTAssertTrue(reveal(element("add.qr"), maxSwipes: 30).isHittable)
+        reveal(element("add.showQR"), maxSwipes: 30).tap()
+        XCTAssertTrue(element("add.qr").waitForExistence(timeout: 5))
         XCTAssertTrue(reveal(element("add.share"), maxSwipes: 30).isHittable)
         XCTAssertTrue(reveal(element("add.steps"), maxSwipes: 30).exists)
     }
