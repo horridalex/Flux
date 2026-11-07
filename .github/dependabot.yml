@@ -1,6 +1,7 @@
 # Opens pull requests when the Go modules (wireguard-go, gVisor, golang.org/x) or the pinned
 # GitHub Actions have a new version. A security fix in one of them gets its own pull request at
-# once; the rest come once a week, grouped, so there aren't many to merge. CI runs on each.
+# once; the rest come once a week, grouped, so there aren't many to merge. CI runs on each, and
+# workflows/dependabot-merge.yml merges the minor and patch ones once it passes.
 version: 2
 updates:
   - package-ecosystem: gomod
