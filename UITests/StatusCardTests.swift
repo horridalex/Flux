@@ -36,7 +36,7 @@ final class StatusCardTests: FluxUITestCase {
     /// A sideloaded build stops opening when its 7-day profile runs out, so the main screen says so first.
     func testAnExpiringBuildSaysToRefreshIt() {
         launch(.expiring)
-        XCTAssertEqual(label(of: "app.expiry"), "Flux stops opening in 2 days. Install it again from Xcode.")
+        XCTAssertEqual(label(of: "app.expiry"), "Flux stops opening in 2 days. Install it again before then.")
     }
 
     func testNoExpiryWarningWithDaysToGo() {

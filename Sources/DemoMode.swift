@@ -1,5 +1,6 @@
 #if DEBUG
 import Foundation
+import SwiftUI
 
 // Fixed, fake app state for the UI tests (UITests/). On the simulator there is no Personal Hotspot
 // and nothing to share, so a test launches the app with `-FluxDemo <scenario>` and gets one of
@@ -27,6 +28,14 @@ enum DemoScenario: String, CaseIterable {
 
     /// Local 2026-10-17 18:00. The expiry warning is relative to this.
     static let now = Calendar.current.date(from: DateComponents(year: 2026, month: 10, day: 17, hour: 18))!
+
+    /// `-FluxAppearance dark` or `light` forces one, for the README's screenshots. Nil follows the
+    /// system.
+    static var appearance: ColorScheme? {
+        let args = ProcessInfo.processInfo.arguments
+        guard let flag = args.firstIndex(of: "-FluxAppearance"), args.indices.contains(flag + 1) else { return nil }
+        return args[flag + 1] == "dark" ? .dark : .light
+    }
 
     /// The scenario named after `-FluxDemo` in the launch arguments, nil in a normal launch.
     static var current: DemoScenario? {
