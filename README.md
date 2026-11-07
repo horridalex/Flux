@@ -23,13 +23,16 @@ Under the hood Flux runs a WireGuard server on UDP port 51820, on the hotspot ad
 
 You need an iPhone with Personal Hotspot, and either a Mac with Xcode or your own signing certificate. A free Apple ID is enough with a Mac.
 
-### Without a Mac: the IPA from GitHub Actions
+### Without a Mac: the IPA from Releases
 
-1. In this repository (or your fork of it), Actions > **Build IPA** > Run workflow. It builds on a GitHub-hosted Mac in about 15 minutes.
-2. Download `Flux-unsigned` from the run's artifacts. It holds `Flux-unsigned.ipa`, built with the bundle ID `com.personal.flux` and not signed.
-3. Sign and install it with your own certificate, in a signing app or with a tool like Sideloadly or AltStore. Keep the same bundle ID every time you install a new build: a signing tool that changes it installs a second Flux with new keys, and every device has to be added again.
+Every version of Flux is on this repository's **Releases** page as `Flux-<version>.ipa`, unsigned. To install one:
+
+1. Download the IPA of the version you want from Releases.
+2. Sign and install it with your own certificate, in a signing app or with a tool like Sideloadly or AltStore. Keep the bundle ID `com.personal.flux` every time you install a new version: a signing tool that changes it installs a second Flux with new keys, and every device has to be added again.
 
 Flux shows on its main screen when the certificate has three days or less left, whatever certificate signed it.
+
+To make a new version: Actions > **Release** > Run workflow, choose `main` and type the version, like `1.2`. It runs the tests, builds the IPA with that version, and publishes it on Releases with the changes since the last version, in about 10 minutes. Pushing a tag like `v1.2` does the same. Actions > **Build IPA** builds any branch without a version, for trying it out: that IPA is a run artifact, kept for 90 days.
 
 ### With a Mac and Xcode
 

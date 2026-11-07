@@ -8,12 +8,15 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_call: # release.yml runs it before it builds
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # The workflow is the caller's when release.yml runs this, so a release's tests and a push's
+  # don't cancel each other.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 defaults:

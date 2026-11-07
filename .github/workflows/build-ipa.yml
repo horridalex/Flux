@@ -1,5 +1,7 @@
 # Actions > Build IPA > Run workflow. Builds an unsigned Release IPA to sign with your own
 # certificate (a signing app, Sideloadly, AltStore...) and install without a Mac. See the README.
+# It's for trying a branch: the IPA is a run artifact, kept 90 days. For a version to keep, with
+# its number in the app and a page on Releases, run release.yml instead.
 name: Build IPA
 
 on:
