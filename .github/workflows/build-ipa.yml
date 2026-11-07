@@ -1,3 +1,5 @@
+# Actions > Build IPA > Run workflow. Builds an unsigned Release IPA to sign with your own
+# certificate (a signing app, Sideloadly, AltStore...) and install without a Mac. See the README.
 name: Build IPA
 
 on:
@@ -17,12 +19,12 @@ jobs:
 
     steps:
       - name: Download source
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Install Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: WireGuard/go.mod
           cache-dependency-path: WireGuard/go.sum
@@ -31,9 +33,7 @@ jobs:
         run: brew install xcodegen
 
       - name: Generate Xcode project
-        run: |
-          chmod +x scripts/build-wireguard.sh
-          xcodegen generate
+        run: xcodegen generate # builds the WireGuard server with Go first
 
       - name: Build unsigned app
         run: |
@@ -62,7 +62,7 @@ jobs:
           /usr/bin/zip -qry Tether-unsigned.ipa Payload
 
       - name: Upload IPA
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: Tether-unsigned
           path: ${{ runner.temp }}/TetherIPA/Tether-unsigned.ipa
@@ -70,7 +70,7 @@ jobs:
 
       - name: Upload build log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: Tether-build-log
           path: ${{ runner.temp }}/tether-build.log

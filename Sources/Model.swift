@@ -46,7 +46,7 @@ final class Model: ObservableObject {
     private let wireGuard = WireGuardServer()
     private let wireGuardDevices: WireGuardDevices
     private let keepAlive = KeepAlive()
-    private static let logger = Logger(subsystem: "com.vsvirskyi.phoneshare", category: "tether")
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "tether", category: "tether")
     /// Only the on-screen sampler publishes connections and speeds, so it runs only while the app is on screen.
     /// False in a launch from a Shortcuts action, which happens in the background.
     private var sceneActive = UIApplication.shared.applicationState != .background

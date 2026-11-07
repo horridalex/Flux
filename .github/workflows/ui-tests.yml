@@ -1,9 +1,12 @@
 # Actions > UI tests > Run workflow. The full XCUITest suite takes about 18 minutes, so it runs on
-# demand and not on every push. It boots its own simulator and deletes it afterwards.
+# demand and not on every push. It runs on a GitHub-hosted Mac and boots its own simulator.
 name: UI tests
 
 on:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 defaults:
   run:
@@ -11,10 +14,16 @@ defaults:
 
 jobs:
   ui-tests:
-    runs-on: [self-hosted, macOS, xcode]
-    timeout-minutes: 45
+    runs-on: macos-26
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: WireGuard/go.mod
+          cache-dependency-path: WireGuard/go.sum
+      - name: Install XcodeGen
+        run: brew install xcodegen
       - name: Create a simulator
         run: |
           runtime=$(xcrun simctl list runtimes iOS -j | python3 -c 'import json, sys; r = [x for x in json.load(sys.stdin)["runtimes"] if x["isAvailable"]]; print(r[-1]["identifier"])')
