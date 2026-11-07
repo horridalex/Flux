@@ -2,7 +2,7 @@ import CryptoKit
 import Foundation
 import Security
 
-/// Where Tether listens. The hotspot always gives the iPhone 172.20.10.1.
+/// Where Flux listens. The hotspot always gives the iPhone 172.20.10.1.
 enum Hotspot {
     static let host = "172.20.10.1"
 }
@@ -14,7 +14,8 @@ struct WireGuardSetup: Codable, Equatable {
     static let port: UInt16 = 51820
     /// The same as MTU in WireGuard/server.go.
     static let mtu = 1420
-    static let dns = "1.1.1.1"
+    /// The DNS server a device uses when nothing else was chosen.
+    static let defaultDNS = "1.1.1.1"
     private static let subnet = "10.7.0."
 
     struct Peer: Codable, Hashable, Identifiable {
@@ -33,6 +34,35 @@ struct WireGuardSetup: Codable, Equatable {
     /// it in, and the first time it connects it joins `peers` and a new one takes its place. Nil
     /// only in a setup saved before there was one, or with all 253 addresses taken.
     var ready: Peer?
+    /// The DNS servers in the configs of devices added from now on, "8.8.8.8, 8.8.4.4" say. Nil
+    /// for `defaultDNS`, and in a setup saved before there was a choice.
+    var dns: String?
+
+    var dnsServers: String { dns ?? Self.defaultDNS }
+
+    /// The DNS servers for devices added from now on. Nil, or the default, goes back to the default.
+    mutating func setDNS(_ servers: String?) {
+        dns = servers == Self.defaultDNS ? nil : servers
+    }
+
+    /// "8.8.8.8 8.8.4.4" or "8.8.8.8,8.8.4.4" as a config's DNS line wants it, "8.8.8.8, 8.8.4.4".
+    /// Nil unless it's one to four IPv4 addresses: a device's tunnel has no IPv6 address, so an
+    /// IPv6 server would never answer.
+    static func normalizedDNS(_ text: String) -> String? {
+        let parts = text.split(whereSeparator: { $0 == "," || $0 == " " || $0 == "\n" }).map(String.init)
+        guard (1...4).contains(parts.count), parts.allSatisfy(isIPv4) else { return nil }
+        return parts.joined(separator: ", ")
+    }
+
+    /// Four numbers from 0 to 255, with no leading zeros.
+    private static func isIPv4(_ text: String) -> Bool {
+        let octets = text.split(separator: ".", omittingEmptySubsequences: false)
+        return octets.count == 4 && octets.allSatisfy { octet in
+            guard (1...3).contains(octet.count), octet.allSatisfy({ ("0"..."9").contains($0) }),
+                  let value = Int(octet), value <= 255 else { return false }
+            return octet.count == 1 || octet.first != "0"
+        }
+    }
 
     /// Everyone the server lets in: the devices, and whoever scans the QR code next.
     var serverPeers: [Peer] { peers + (ready.map { [$0] } ?? []) }
@@ -51,7 +81,7 @@ struct WireGuardSetup: Codable, Equatable {
     mutating func addPeer(name: String) -> Peer? {
         guard var peer = newPeer() else { return nil }
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        peer.name = trimmed.isEmpty ? freeName("Device") : trimmed
+        peer.name = trimmed.isEmpty ? freeName(Self.deviceName) : trimmed
         peers.append(peer)
         return peer
     }
@@ -65,7 +95,7 @@ struct WireGuardSetup: Codable, Equatable {
     /// a new one is ready for the next device. False when `address` isn't the ready device's.
     mutating func claimReady(address: String) -> Bool {
         guard var peer = ready, peer.address == address else { return false }
-        peer.name = freeName("Device")
+        peer.name = freeName(Self.deviceName)
         peers.append(peer)
         ready = nil
         prepareReady()
@@ -85,6 +115,9 @@ struct WireGuardSetup: Codable, Equatable {
         peers.removeAll { $0.id == id }
     }
 
+    /// What a new device is called, in the iPhone's language.
+    private static var deviceName: String { String(localized: "Device") }
+
     /// "Device", then "Device 2", "Device 3", skipping names already taken.
     private func freeName(_ base: String) -> String {
         guard peers.contains(where: { $0.name == base }) else { return base }
@@ -101,13 +134,13 @@ struct WireGuardSetup: Codable, Equatable {
     }
 
     /// What the device imports, as a QR code or a .conf file. All traffic goes into the tunnel,
-    /// IPv6 too, so nothing slips past Tether onto the hotspot directly.
+    /// IPv6 too, so nothing slips past Flux onto the hotspot directly.
     func clientConfig(for peer: Peer) -> String {
         """
         [Interface]
         PrivateKey = \(peer.privateKey.base64EncodedString())
         Address = \(peer.address)/32
-        DNS = \(Self.dns)
+        DNS = \(dnsServers)
         MTU = \(Self.mtu)
 
         [Peer]
@@ -122,7 +155,7 @@ struct WireGuardSetup: Codable, Equatable {
     /// WireGuard names the tunnel after the file, so keep it to letters, digits and dashes.
     static func fileName(for name: String) -> String {
         let parts = name.components(separatedBy: CharacterSet.alphanumerics.inverted).filter { !$0.isEmpty }
-        return (["Tether"] + parts).joined(separator: "-") + ".conf"
+        return (["Flux"] + parts).joined(separator: "-") + ".conf"
     }
 }
 
@@ -144,7 +177,7 @@ final class KeychainSecrets: SecretStore {
     private let query: [String: Any]
 
     /// `service` only changes in tests, which keep their own item apart from the app's.
-    init(service: String = "tether.wireguard") {
+    init(service: String = "flux.wireguard") {
         query = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -245,6 +278,12 @@ final class WireGuardDevices {
             setup = before
             return false
         }
+    }
+
+    /// False when the change couldn't be saved, and then nothing changes.
+    @discardableResult
+    func setDNS(_ servers: String?) -> Bool {
+        change { $0.setDNS(servers) }
     }
 
     /// False when the change couldn't be saved, and then nothing changes.

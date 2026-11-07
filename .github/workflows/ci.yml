@@ -1,15 +1,16 @@
-# Runs on the self-hosted runner on Viktor's MacBook (label "xcode"). Building an iOS app needs
-# Xcode, so a Linux runner can't do it. Jobs wait in the queue while the MacBook is asleep.
-#
-# The runner is a real machine, so only trusted code may reach it. What enforces that lives outside
-# this file: the repo is private with one collaborator, and Settings > Actions has workflows from
-# fork pull requests turned off. Keep both if the repo ever opens up. The `if` below is a second guard.
+# Runs on a GitHub-hosted Mac, since building an iOS app needs Xcode. In a private repository a
+# macOS minute counts ten times against the free Actions minutes, so it runs for pull requests and
+# main, not for every branch push. Actions > CI > Run workflow runs it on any branch.
 name: CI
 
-# Every branch push runs it, so a branch is green before it's merged into main.
 on:
   pull_request:
   push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -21,11 +22,18 @@ defaults:
 
 jobs:
   test:
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, macOS, xcode]
-    timeout-minutes: 20
+    runs-on: macos-26
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the build number is the commit count, see project.yml
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: WireGuard/go.mod
+          cache-dependency-path: WireGuard/go.sum
+      - name: Install XcodeGen
+        run: brew install xcodegen
       - name: Build the WireGuard server
         run: scripts/build-wireguard.sh # swift test links its macOS slice
       - name: Unit tests
@@ -34,12 +42,12 @@ jobs:
         run: go -C WireGuard test -race ./...
       - name: Fuzz the UDP replies
         run: go -C WireGuard test -run '^$' -fuzz FuzzReplyPackets -fuzztime 30s ./...
-      # Fails only on a known vulnerability that Tether's code can reach. Pinned, like the actions.
+      # Fails only on a known vulnerability that Flux's code can reach. Pinned, like the actions.
       - name: Known vulnerabilities
         run: go -C WireGuard run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
       - name: Build the app
         run: |
           xcodegen generate --quiet
-          xcodebuild -project Tether.xcodeproj -scheme Tether \
+          xcodebuild -project Flux.xcodeproj -scheme Flux \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/dd" build | tail -3

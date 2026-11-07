@@ -5,59 +5,121 @@ struct MainView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
+            ScrollView {
+                // A bento grid of glass tiles: the status across the top, the numbers side by side,
+                // then the devices, the QR code for the next one, and the settings.
+                VStack(spacing: 12) {
                     StatusCard(model: model)
-                }
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
 
-                if let warning = model.expiryWarning {
-                    Section {
-                        Label {
-                            Text(warning)
-                        } icon: {
-                            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    if let warning = model.expiryWarning {
+                        Tile(tint: .orange) {
+                            Label {
+                                Text(warning)
+                            } icon: {
+                                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                            }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityIdentifier("app.expiry")
                         }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityIdentifier("app.expiry")
                     }
-                }
 
-                // Above the QR code, so a reason it doesn't work and the way out are both here.
-                WireGuardProblemSection(model: model)
+                    // Above the QR code, so a reason it doesn't work and the way out are both here.
+                    WireGuardProblemSection(model: model)
 
-                if model.sharing {
-                    Section {
-                        SpeedRow(down: model.downSpeed, up: model.upSpeed)
-                    }
-                }
-
-                if !model.wireGuardPeers.isEmpty {
-                    Section("Devices") {
-                        ForEach(model.wireGuardPeers) { peer in
-                            NavigationLink { DeviceView(model: model, peer: peer) } label: {
-                                // A plain row: LabeledContent with a Label on its right grows several
-                                // rows tall inside a NavigationLink on iOS 27.
-                                HStack {
-                                    Text(peer.name)
-                                    Spacer()
-                                    ConnectedLabel(connected: model.wireGuardConnected.contains(peer.address))
-                                        .font(.subheadline)
+                    if model.sharing || model.usageToday.all.total > 0 {
+                        HStack(spacing: 12) {
+                            if model.sharing {
+                                Tile(title: "Now") {
+                                    SpeedRow(down: model.downSpeed, up: model.upSpeed)
                                 }
                             }
-                            .accessibilityIdentifier("device.\(peer.name)")
+                            Tile(title: "Used today") {
+                                UsageSummary(bytes: model.usageToday.all)
+                                    .accessibilityIdentifier("usage.today")
+                            }
+                        }
+                        .fixedSize(horizontal: false, vertical: true) // both tiles as tall as the taller one
+                    }
+
+                    if !model.wireGuardPeers.isEmpty {
+                        Tile(title: "Devices") {
+                            VStack(spacing: 0) {
+                                ForEach(Array(model.wireGuardPeers.enumerated()), id: \.element.id) { index, peer in
+                                    if index > 0 { Divider() }
+                                    NavigationLink { DeviceView(model: model, peer: peer) } label: {
+                                        TileRow {
+                                            Text(peer.name)
+                                            Spacer()
+                                            ConnectedLabel(connected: model.wireGuardConnected.contains(peer.address))
+                                                .font(.subheadline)
+                                        }
+                                    }
+                                    .accessibilityIdentifier("device.\(peer.name)")
+                                }
+                            }
                         }
                     }
-                }
 
-                AddDeviceSection(model: model, first: model.wireGuardPeers.isEmpty)
+                    AddDeviceSection(model: model, first: model.wireGuardPeers.isEmpty)
+
+                    Tile(title: "Settings") {
+                        NavigationLink { DNSView(model: model) } label: {
+                            TileRow {
+                                Text("DNS")
+                                Spacer()
+                                Text(verbatim: model.wireGuardDNS)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .accessibilityIdentifier("settings.dns")
+                    }
+                }
+                .padding(16)
+                .animation(.smooth, value: model.sharing)
             }
+            .background(AuroraBackground(flowing: model.sharing))
             // The status card says what this screen is, so the root drops the big title. It's still set,
             // because the screens pushed from here use it for their back button.
-            .navigationTitle("Tether")
+            .navigationTitle("Flux")
             .toolbar(.hidden, for: .navigationBar)
         }
+    }
+}
+
+/// A row in a tile that opens another screen: the label, then a chevron like a List's.
+struct TileRow<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        HStack {
+            content
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
+        }
+        .foregroundStyle(Color.primary)
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
+    }
+}
+
+/// Today's total, big, with the download and upload under it, for the main screen's tile.
+struct UsageSummary: View {
+    let bytes: Usage.Bytes
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(verbatim: Format.bytes(bytes.total))
+                .font(.title2.weight(.bold).monospacedDigit())
+            Text("\(Image(systemName: "arrow.down")) \(Format.bytes(bytes.down))  \(Image(systemName: "arrow.up")) \(Format.bytes(bytes.up))")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Used today"))
+        .accessibilityValue(Text("\(Format.bytes(bytes.total)), download \(Format.bytes(bytes.down)), upload \(Format.bytes(bytes.up))"))
     }
 }
 
@@ -67,7 +129,7 @@ struct SpeedRow: View {
     let up: Double
 
     var body: some View {
-        HStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 4) {
             Text("\(Image(systemName: "arrow.down")) \(Format.speed(down))")
                 .foregroundStyle(Direction.download)
             Text("\(Image(systemName: "arrow.up")) \(Format.speed(up))")
@@ -80,15 +142,40 @@ struct SpeedRow: View {
     }
 }
 
-/// Download and upload colours, the same in every speed and card. Orange and red stay for warnings.
+/// How much was downloaded and uploaded, for today's figures.
+struct UsageRow: View {
+    let title: LocalizedStringKey
+    let bytes: Usage.Bytes
+
+    var body: some View {
+        LabeledContent(title) {
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(verbatim: Format.bytes(bytes.total))
+                Text("\(Image(systemName: "arrow.down")) \(Format.bytes(bytes.down))  \(Image(systemName: "arrow.up")) \(Format.bytes(bytes.up))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .monospacedDigit()
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(title))
+        .accessibilityValue(Text("\(Format.bytes(bytes.total)), download \(Format.bytes(bytes.down)), upload \(Format.bytes(bytes.up))"))
+    }
+}
+
+/// Download and upload colours, the brand's cyan and violet, the same in every speed. Darker in
+/// light mode and lighter in dark mode, so both keep a 4.5:1 contrast on glass. Orange and red stay
+/// for warnings.
 enum Direction {
-    static let download = Color.accentColor
-    /// Darker than the system teal in light mode and lighter in dark mode, so the upload speed
-    /// keeps a 4.5:1 contrast on the card in both.
+    static let download = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.45, green: 0.88, blue: 1.00, alpha: 1)
+            : UIColor(red: 0.00, green: 0.38, blue: 0.68, alpha: 1)
+    })
     static let upload = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.35, green: 0.85, blue: 0.80, alpha: 1)
-            : UIColor(red: 0.0, green: 0.47, blue: 0.48, alpha: 1)
+            ? UIColor(red: 0.80, green: 0.68, blue: 1.00, alpha: 1)
+            : UIColor(red: 0.42, green: 0.22, blue: 0.80, alpha: 1)
     })
 }
 
@@ -102,13 +189,9 @@ struct StatusCard: View {
     /// Grows with the text size, like the title under it.
     @ScaledMetric(relativeTo: .title) private var iconSize: CGFloat = 44
 
-    /// Sharing gets the brand's two colours, softly. Waiting stays orange, the warning colour.
-    private var background: some ShapeStyle {
-        sharing
-            ? AnyShapeStyle(LinearGradient(colors: [Direction.download.opacity(0.22), Direction.upload.opacity(0.18)],
-                                           startPoint: .topLeading, endPoint: .bottomTrailing))
-            : AnyShapeStyle(tint.opacity(0.15))
-    }
+    /// The glass takes a little of the brand's blue while sharing, and of orange, the warning
+    /// colour, while waiting.
+    private var glassTint: Color { sharing ? Brand.blue.opacity(0.25) : Color.orange.opacity(0.22) }
 
     /// Opens Settings at its main screen, where Personal Hotspot is near the top. Nothing goes
     /// straight to the Personal Hotspot page any more: on iOS 27, App-prefs:INTERNET_TETHERING and
@@ -119,17 +202,23 @@ struct StatusCard: View {
 
     private var headline: String {
         switch model.wireGuardConnected.count {
-        case 0: return "Hotspot is on, no device is using Tether yet"
-        case 1: return "Sharing with 1 device"
-        case let n: return "Sharing with \(n) devices"
+        case 0: return String(localized: "Hotspot is on, no device is using Flux yet")
+        case 1: return String(localized: "Sharing with 1 device")
+        case let n: return String(localized: "Sharing with \(n) devices")
         }
+    }
+
+    private var title: LocalizedStringKey {
+        if sharing { return "Sharing" }
+        return model.running ? "Flux can't share yet" : "Turn on Personal Hotspot"
     }
 
     var body: some View {
         VStack(spacing: 8) {
-            Image(systemName: "link")
+            Image(systemName: "water.waves")
                 .font(.system(size: iconSize, weight: .semibold))
-                .foregroundStyle(.tint)
+                .foregroundStyle(Brand.flow)
+                .symbolEffect(.variableColor.iterative, isActive: sharing)
                 .overlay(alignment: .bottomTrailing) {
                     Circle()
                         .fill(tint)
@@ -138,7 +227,7 @@ struct StatusCard: View {
                         .offset(x: 6, y: 4)
                 }
                 .accessibilityHidden(true)
-            Text(sharing ? "Sharing" : model.running ? "Tether can't share yet" : "Turn on Personal Hotspot")
+            Text(title)
                 .font(.title.bold())
                 .multilineTextAlignment(.center)
                 .accessibilityIdentifier("status.title")
@@ -174,7 +263,7 @@ struct StatusCard: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
         .padding(.horizontal)
-        .background(background, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .glassTile(cornerRadius: 28, tint: glassTint)
         .animation(.smooth, value: sharing)
     }
 }

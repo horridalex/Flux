@@ -1,0 +1,75 @@
+/* Korean. The keys are the English text in the code. %@ is text, %lld a number. */
+
+/* Main screen: the status card */
+"Sharing" = "공유 중";
+"Flux can't share yet" = "아직 공유할 수 없음";
+"Turn on Personal Hotspot" = "개인용 핫스팟을 켜세요";
+"Hotspot is on, no device is using Flux yet" = "핫스팟이 켜져 있지만 아직 Flux를 쓰는 기기가 없습니다";
+"Sharing with 1 device" = "기기 1대와 공유 중";
+"Sharing with %lld devices" = "기기 %lld대와 공유 중";
+"To stop, turn off Personal Hotspot." = "멈추려면 개인용 핫스팟을 끄세요.";
+"Personal Hotspot is on, but WireGuard isn't running." = "개인용 핫스팟은 켜져 있지만 WireGuard가 실행되지 않고 있습니다.";
+"Settings > Personal Hotspot > Allow Others to Join" = "설정 > 개인용 핫스팟 > 다른 사람의 연결 허용";
+"Opens Settings" = "설정을 엽니다";
+
+/* Main screen: speeds and usage */
+"Download %@, upload %@" = "다운로드 %@, 업로드 %@";
+"Used today" = "오늘 사용량";
+"Now" = "현재 속도";
+"%@, download %@, upload %@" = "%@, 다운로드 %@, 업로드 %@";
+
+/* Main screen: devices and the QR code */
+"Devices" = "기기";
+"Connected" = "연결됨";
+"Not connected" = "연결 안 됨";
+"Add a device" = "기기 추가";
+"Add another device" = "다른 기기 추가";
+"QR code for the next device" = "다음 기기용 QR 코드";
+"Share as a file, for a Mac or a router" = "파일로 공유 (Mac 또는 라우터용)";
+"Install WireGuard on it, tap + > Create from QR code and scan this. Then edit the tunnel and turn On-Demand on for this iPhone's hotspot only. A travel router imports the file and turns its VPN on." = "기기에 WireGuard를 설치하고 + > QR 코드로부터 생성을 눌러 이 코드를 스캔하세요. 그다음 터널을 편집해 주문형 활성화(On-Demand)를 이 iPhone의 핫스팟에서만 켜지도록 설정하세요. 여행용 라우터는 파일을 가져와 VPN을 켜면 됩니다.";
+"Device" = "기기";
+
+/* WireGuard problems */
+"WireGuard isn't running" = "WireGuard가 실행되지 않음";
+"Start over with new keys" = "새 키로 다시 시작";
+"Its saved keys can't be read. Start over with new keys to use it." = "저장된 키를 읽을 수 없습니다. 사용하려면 새 키로 다시 시작하세요.";
+"Its keys can't be read yet. Unlock this iPhone once." = "아직 키를 읽을 수 없습니다. 이 iPhone의 잠금을 한 번 해제하세요.";
+"It couldn't start: %@" = "시작할 수 없습니다: %@";
+
+/* A device's screen */
+"Remove device" = "기기 제거";
+"Remove" = "제거";
+"Remove %@?" = "%@을(를) 제거할까요?";
+"It can't connect any more. Delete its tunnel in its WireGuard app too." = "이 기기는 더 이상 연결할 수 없습니다. 기기의 WireGuard 앱에서도 터널을 삭제하세요.";
+"A travel router's figures include every device behind it." = "여행용 라우터의 사용량에는 그 뒤에 연결된 모든 기기가 포함됩니다.";
+
+/* Settings > DNS */
+"Settings" = "설정";
+"DNS" = "DNS";
+"Cloudflare" = "Cloudflare";
+"Google" = "Google";
+"Quad9" = "Quad9";
+"AdGuard (blocks ads)" = "AdGuard (광고 차단)";
+"Devices you add from now on use these. A device already added keeps its own: change DNS in its WireGuard tunnel, or remove it and add it again." = "지금부터 추가하는 기기가 이 서버를 사용합니다. 이미 추가된 기기는 기존 설정을 유지하니, 그 기기의 WireGuard 터널에서 DNS를 바꾸거나 기기를 제거한 뒤 다시 추가하세요.";
+"Other servers" = "다른 서버";
+"For example 192.168.8.1" = "예: 192.168.8.1";
+"Use these servers" = "이 서버 사용";
+"Enter one to four IPv4 addresses, separated by commas." = "IPv4 주소를 1~4개, 쉼표로 구분해 입력하세요.";
+
+/* The expiry warning */
+"Flux stops opening today. Install it again before then." = "Flux가 오늘 만료되어 열리지 않게 됩니다. 그 전에 다시 설치하세요.";
+"Flux stops opening tomorrow. Install it again before then." = "Flux가 내일 만료되어 열리지 않게 됩니다. 그 전에 다시 설치하세요.";
+"Flux stops opening in %lld days. Install it again before then." = "Flux가 %lld일 후 만료되어 열리지 않게 됩니다. 그 전에 다시 설치하세요.";
+
+/* Shortcuts actions */
+"Start Flux" = "Flux 시작";
+"Is Flux Sharing?" = "Flux 공유 중인가요?";
+"Wakes Flux in the background, the same as opening it. It shares as soon as a device joins Personal Hotspot in the next 10 minutes. Put it after Set Personal Hotspot." = "Flux를 여는 것과 같이 백그라운드에서 깨웁니다. 앞으로 10분 안에 기기가 개인용 핫스팟에 연결되면 바로 공유를 시작합니다. '개인용 핫스팟 설정' 동작 다음에 넣으세요.";
+"True while Flux is sharing Personal Hotspot, for an If in a shortcut. It also says how many devices are connected." = "Flux가 개인용 핫스팟을 공유하는 동안 참(true)을 돌려주므로 단축어의 '만약'에 쓸 수 있습니다. 연결된 기기 수도 알려줍니다.";
+"Flux couldn't keep running in the background. Open it once." = "Flux가 백그라운드에서 계속 실행될 수 없었습니다. 한 번 열어 주세요.";
+"Flux is ready. It starts sharing when a device joins Personal Hotspot in the next %lld minutes." = "Flux가 준비되었습니다. 앞으로 %lld분 안에 기기가 개인용 핫스팟에 연결되면 공유를 시작합니다.";
+"Personal Hotspot is on, but WireGuard isn't running. %@" = "개인용 핫스팟은 켜져 있지만 WireGuard가 실행되지 않고 있습니다. %@";
+"Flux is waiting for a device to join Personal Hotspot." = "Flux가 개인용 핫스팟에 기기가 연결되기를 기다리고 있습니다.";
+"Flux is sharing. No device is using it yet." = "Flux가 공유 중입니다. 아직 사용하는 기기는 없습니다.";
+"Flux is sharing with 1 device." = "Flux가 기기 1대와 공유 중입니다.";
+"Flux is sharing with %lld devices." = "Flux가 기기 %lld대와 공유 중입니다.";

@@ -1,40 +1,43 @@
-name: Tether
+name: Flux
 options:
-  bundleIdPrefix: com.vsvirskyi
+  bundleIdPrefix: com.personal
   deploymentTarget:
     iOS: "17.0"
-  # Builds the WireGuard server (Go) into WireGuard/build/TetherWG.xcframework. Skips when unchanged.
+  # Builds the WireGuard server (Go) into WireGuard/build/FluxWG.xcframework. Skips when unchanged.
   preGenCommand: scripts/build-wireguard.sh
 settings:
   base:
-    DEVELOPMENT_TEAM: 33TVZ53MZ2 # your team ID, see Xcode > Settings > Accounts
+    # Your team ID, from Xcode > Settings > Accounts, to build for an iPhone from Xcode. Empty is
+    # enough for the simulator and for the unsigned IPA (build-ipa.yml) that you sign yourself.
+    DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "5.0"
     TARGETED_DEVICE_FAMILY: "1,2"
-    # The app's bundle ID. Pass APP_BUNDLE_ID to xcodebuild to change it.
-    APP_BUNDLE_ID: com.vsvirskyi.phoneshare
+    # The app's bundle ID, the same as the IPA that build-ipa.yml makes. Pass APP_BUNDLE_ID to
+    # xcodebuild to change it. A new one installs a second Flux with new keys.
+    APP_BUNDLE_ID: com.personal.flux
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1" # the built app gets the commit count instead, see postBuildScripts
 targets:
-  Tether:
+  Flux:
     type: application
     platform: iOS
     sources: [Sources]
     dependencies:
-      - framework: WireGuard/build/TetherWG.xcframework
+      - framework: WireGuard/build/FluxWG.xcframework
         embed: false # a static library, linked into the app
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Tether
-        INFOPLIST_KEY_NSLocalNetworkUsageDescription: Tether accepts connections from your iPad on the hotspot network.
+        INFOPLIST_KEY_CFBundleDisplayName: Flux
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: Flux accepts connections from your devices on the hotspot network.
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     # The build number is the commit count, so each build on the iPhone can be told apart
-    # (Settings > General > iPhone Storage > Tether). It runs before Xcode signs the app.
+    # (Settings > General > iPhone Storage > Flux). It runs before Xcode signs the app.
     postBuildScripts:
       - name: Build number from git
         basedOnDependencyAnalysis: false
@@ -51,23 +54,23 @@ targets:
         UIBackgroundModes: [audio]
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-  TetherUITests:
+  FluxUITests:
     type: bundle.ui-testing
     platform: iOS
     sources: [UITests]
     dependencies:
-      - target: Tether
+      - target: Flux
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.vsvirskyi.phoneshare.uitests
+        PRODUCT_BUNDLE_IDENTIFIER: com.personal.flux.uitests
         GENERATE_INFOPLIST_FILE: YES
 schemes:
-  Tether:
+  Flux:
     build:
       targets:
-        Tether: all
+        Flux: all
     run:
       config: Debug
     test:
       config: Debug
-      targets: [TetherUITests]
+      targets: [FluxUITests]

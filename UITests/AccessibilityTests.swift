@@ -1,7 +1,7 @@
 import XCTest
 
 /// Accessibility: the system audit on the screens, Dynamic Type at an accessibility size, and dark mode.
-final class AccessibilityTests: TetherUITestCase {
+final class AccessibilityTests: FluxUITestCase {
     override func tearDown() {
         XCUIDevice.shared.appearance = .light
         super.tearDown()
@@ -67,7 +67,7 @@ final class AccessibilityTests: TetherUITestCase {
         try audit()
     }
 
-    /// The upload colour is Tether's own, so it gets a contrast check where it shows, in both appearances.
+    /// The upload colour is Flux's own, so it gets a contrast check where it shows, in both appearances.
     func testTrafficSpeedsPassTheContrastAudit() throws {
         for appearance in [XCUIDevice.Appearance.light, .dark] {
             XCUIDevice.shared.appearance = appearance

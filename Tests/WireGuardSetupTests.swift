@@ -1,7 +1,7 @@
 import CryptoKit
 import Security
 import XCTest
-@testable import TetherCore
+@testable import FluxCore
 
 final class WireGuardSetupTests: XCTestCase {
     func testANewSetupHasAServerKeyAndNoDevices() {
@@ -59,6 +59,34 @@ final class WireGuardSetupTests: XCTestCase {
             PersistentKeepalive = 25
 
             """)
+    }
+
+    func testDevicesAddedAfterADNSChangeUseIt() throws {
+        var setup = WireGuardSetup.new()
+        setup.setDNS("8.8.8.8, 8.8.4.4")
+        let peer = try XCTUnwrap(setup.addPeer(name: "iPad"))
+        XCTAssertTrue(setup.clientConfig(for: peer).contains("\nDNS = 8.8.8.8, 8.8.4.4\n"))
+        setup.setDNS(WireGuardSetup.defaultDNS)
+        XCTAssertNil(setup.dns, "the default is saved as no choice")
+        XCTAssertEqual(setup.dnsServers, "1.1.1.1")
+    }
+
+    func testDNSServersAreIPv4Addresses() {
+        XCTAssertEqual(WireGuardSetup.normalizedDNS("8.8.8.8 8.8.4.4"), "8.8.8.8, 8.8.4.4")
+        XCTAssertEqual(WireGuardSetup.normalizedDNS(" 9.9.9.9,149.112.112.112 "), "9.9.9.9, 149.112.112.112")
+        XCTAssertEqual(WireGuardSetup.normalizedDNS("192.168.8.1"), "192.168.8.1")
+        XCTAssertEqual(WireGuardSetup.normalizedDNS("0.0.0.0"), "0.0.0.0")
+        for bad in ["", " , ", "8.8.8", "8.8.8.256", "8.8.08.8", "dns.google", "2606:4700::1111", "1.1.1.1.1",
+                    "1.1.1.1, 1.0.0.1, 8.8.8.8, 8.8.4.4, 9.9.9.9"] {
+            XCTAssertNil(WireGuardSetup.normalizedDNS(bad), bad)
+        }
+    }
+
+    func testADNSChoiceIsSaved() {
+        let secrets = InMemorySecrets()
+        let devices = WireGuardDevices(secrets: secrets)
+        XCTAssertTrue(devices.setDNS("8.8.8.8"))
+        XCTAssertEqual(WireGuardDevices(secrets: secrets).setup.dns, "8.8.8.8")
     }
 
     func testAKeyThatIsNotAKeyHasNoPublicKey() {
@@ -169,8 +197,8 @@ final class WireGuardSetupTests: XCTestCase {
     }
 
     func testTheConfigFileNameIsSafe() {
-        XCTAssertEqual(WireGuardSetup.fileName(for: "Viktor's iPad"), "Tether-Viktor-s-iPad.conf")
-        XCTAssertEqual(WireGuardSetup.fileName(for: "///"), "Tether.conf")
+        XCTAssertEqual(WireGuardSetup.fileName(for: "Viktor's iPad"), "Flux-Viktor-s-iPad.conf")
+        XCTAssertEqual(WireGuardSetup.fileName(for: "///"), "Flux.conf")
     }
 
     func testItSurvivesARoundTrip() throws {
@@ -294,7 +322,7 @@ final class KeychainSecretsTests: XCTestCase {
     private var secrets: KeychainSecrets!
 
     override func setUpWithError() throws {
-        service = "tether.wireguard.tests.\(UUID().uuidString)"
+        service = "flux.wireguard.tests.\(UUID().uuidString)"
         secrets = KeychainSecrets(service: service)
         // Reading can work where saving can't: the CI runner is a background service with no
         // unlocked login keychain, and saving there fails with errSecInteractionNotAllowed

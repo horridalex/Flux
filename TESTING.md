@@ -29,21 +29,21 @@ go -C WireGuard test -run '^$' -fuzz FuzzReplyPackets -fuzztime 30s ./...
 go -C WireGuard run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 ```
 
-The fuzz test sends any payload from the internet through `replyPackets` and checks the fragments are valid IPv4 that put the datagram back together exactly. `govulncheck` fails only when Tether's code can reach a known vulnerability.
+The fuzz test sends any payload from the internet through `replyPackets` and checks the fragments are valid IPv4 that put the datagram back together exactly. `govulncheck` fails only when Flux's code can reach a known vulnerability.
 
-They run a real WireGuard client (wireguard-go with its own netstack) against the server over loopback: TCP and UDP through the tunnel, an unknown key getting nothing, sharing off, a removed device locked out and its connections closed, a router's clients sending from their own private addresses (and a plain device or a public address refused), Close during UDP traffic (a deadlock once), full-cone UDP (a reply from an address the device never contacted gets through, the way a call connects), and replies bigger than the tunnel MTU arriving in IPv4 fragments. The client's netstack refuses to send to 127.0.0.1, so the tests dial a documentation address (198.51.100.7) and swap the server's dialer to reach the local test listeners.
+They run a real WireGuard client (wireguard-go with its own netstack) against the server over loopback: TCP, UDP and ping through the tunnel, each device's own byte totals, an unknown key getting nothing, sharing off, a removed device locked out and its connections closed, a router's clients sending from their own private addresses (and a plain device or a public address refused), Close during UDP traffic (a deadlock once), full-cone UDP (a reply from an address the device never contacted gets through, the way a call connects), and replies bigger than the tunnel MTU arriving in IPv4 fragments. The client's netstack refuses to send to 127.0.0.1, so the tests dial a documentation address (198.51.100.7) and swap the server's dialer to reach the local test listeners.
 
 ## 2. UI tests on the simulator
 
 ```sh
 xcodegen generate
-xcodebuild test -project Tether.xcodeproj -scheme Tether \
-  -destination "platform=iOS Simulator,name=<a simulator>" -derivedDataPath .build-sim -only-testing:TetherUITests
+xcodebuild test -project Flux.xcodeproj -scheme Flux \
+  -destination "platform=iOS Simulator,name=<a simulator>" -derivedDataPath .build-sim -only-testing:FluxUITests
 ```
 
 XCUITests in `UITests/` walk every screen and flow of the app: the status card, the speed and the device list on the main screen, the QR code section (code, shared file, steps, the header), one device's screen (Connected or not, renaming, removing with a confirmation), the WireGuard problem section, the system accessibility audit, large text and dark mode. They need no device and no network. A demo launch never connects a device, so claiming the ready device is covered by the unit tests, not here.
 
-A simulator has no Personal Hotspot and nothing to share, so each test launches the app with `-TetherDemo <scenario>` (see `Sources/DemoMode.swift`). The scenarios are fixed fake states: `waiting`, `noDevices`, `sharing` (devices iPad connected and MacBook not, and a speed), `wireGuardLocked` (the Keychain is locked: WireGuard shows its problem and there is no QR code), `wireGuardNeedsReset` (the saved WireGuard keys can't be read, so only "Start over with new keys" gets past it, and then the QR code appears) and `expiring` (sharing, two days before the build stops opening). The WireGuard setup lives in an in-memory store in a demo launch, never the Keychain. In a demo launch the app starts no server, audio, watcher or sampler. The code is `#if DEBUG`, so a Release build does not contain it. A launch without the argument is the real app, and `NormalLaunchTests` checks that.
+A simulator has no Personal Hotspot and nothing to share, so each test launches the app with `-FluxDemo <scenario>` (see `Sources/DemoMode.swift`). The scenarios are fixed fake states: `waiting`, `noDevices`, `sharing` (devices iPad connected and MacBook not, and a speed), `wireGuardLocked` (the Keychain is locked: WireGuard shows its problem and there is no QR code), `wireGuardNeedsReset` (the saved WireGuard keys can't be read, so only "Start over with new keys" gets past it, and then the QR code appears) and `expiring` (sharing, two days before the build stops opening). The WireGuard setup lives in an in-memory store in a demo launch, never the Keychain. In a demo launch the app starts no server, audio, watcher or sampler. The code is `#if DEBUG`, so a Release build does not contain it. A launch without the argument is the real app, and `NormalLaunchTests` checks that.
 
 ## 3. By hand, with someone on the other end
 
@@ -58,16 +58,16 @@ These need another person or a game account, so they aren't scripted.
 | iPhone locked | Repeat one call with the iPhone screen locked | Same as unlocked |
 | Music on the iPhone | Play music on the iPhone, then browse from the iPad | Music keeps playing and the iPad stays online |
 | Call on the iPhone | Take a phone call on the iPhone, hang up, browse from the iPad | The iPad is still online after the call |
-| WireGuard | Scan the QR code on Tether's main screen with WireGuard on the iPad, turn the tunnel on, browse and call | Pages and calls work, the iPad is listed as Connected, and the QR code changes to a new one |
-| Travel router | Share the file from Tether's main screen, import it in the router's WireGuard client, connect the router to the iPhone, join a laptop to the router's Wi-Fi and browse | The router is listed as Connected in Tether and pages load. Tether finds the router by itself, with nothing to set |
-| Connected check | Keep Tether's main screen open while you scan the QR code on an iPad and turn the tunnel on | The iPad shows up in the Devices list as Connected within a few seconds, and the code is replaced |
-| Idle WireGuard device | Connect the iPad with WireGuard, then leave it alone for 2 minutes | Tether still shows it as Connected. Turn its tunnel off: within 3 minutes it shows Not connected |
-| Battery overnight | Leave the hotspot on and the iPad connected overnight, then open Settings > Battery | Tether is no longer the top app by a wide margin |
-| Battery, nothing to share | Open Tether, then leave the iPhone in airplane mode overnight | Tether is near the bottom of Settings > Battery |
-| Hotspot after a long gap | Wait more than 10 minutes with the hotspot off, open Tether, then turn the hotspot on in Settings | Tether starts sharing without being opened again |
-| Shortcut after a long gap | Wait more than 10 minutes with the hotspot off and Tether in the background, then run a shortcut with Set Personal Hotspot (On) and Start Tether | Tether doesn't come on screen and the action says it's ready. Join the iPad: its tunnel connects. Lock the iPhone for 15 minutes: the iPad is still online |
-| Is Tether Sharing? | Run it with the hotspot off, then on with the iPad connected | It says waiting, then sharing with 1 device |
+| WireGuard | Scan the QR code on Flux's main screen with WireGuard on the iPad, turn the tunnel on, browse and call | Pages and calls work, the iPad is listed as Connected, and the QR code changes to a new one |
+| Travel router | Share the file from Flux's main screen, import it in the router's WireGuard client, connect the router to the iPhone, join a laptop to the router's Wi-Fi and browse | The router is listed as Connected in Flux and pages load. Flux finds the router by itself, with nothing to set |
+| Connected check | Keep Flux's main screen open while you scan the QR code on an iPad and turn the tunnel on | The iPad shows up in the Devices list as Connected within a few seconds, and the code is replaced |
+| Idle WireGuard device | Connect the iPad with WireGuard, then leave it alone for 2 minutes | Flux still shows it as Connected. Turn its tunnel off: within 3 minutes it shows Not connected |
+| Battery overnight | Leave the hotspot on and the iPad connected overnight, then open Settings > Battery | Flux is no longer the top app by a wide margin |
+| Battery, nothing to share | Open Flux, then leave the iPhone in airplane mode overnight | Flux is near the bottom of Settings > Battery |
+| Hotspot after a long gap | Wait more than 10 minutes with the hotspot off, open Flux, then turn the hotspot on in Settings | Flux starts sharing without being opened again |
+| Shortcut after a long gap | Wait more than 10 minutes with the hotspot off and Flux in the background, then run a shortcut with Set Personal Hotspot (On) and Start Flux | Flux doesn't come on screen and the action says it's ready. Join the iPad: its tunnel connects. Lock the iPhone for 15 minutes: the iPad is still online |
+| Is Flux Sharing? | Run it with the hotspot off, then on with the iPad connected | It says waiting, then sharing with 1 device |
 
 ## Things we learned the hard way
 
-- **A test build replaces the installed Tether.** Build it with the same bundle ID as the installed copy, or it installs next to it with new WireGuard keys, and every device has to be added again.
+- **A test build replaces the installed Flux.** Build it with the same bundle ID as the installed copy, or it installs next to it with new WireGuard keys, and every device has to be added again.

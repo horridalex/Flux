@@ -209,6 +209,9 @@ func TestTCPGoesThroughTheTunnel(t *testing.T) {
 	if len(st.Connected) != 1 || st.Connected[0] != "10.7.0.2" {
 		t.Fatalf("connected %v, want the device's tunnel address", st.Connected)
 	}
+	if d := st.Devices["10.7.0.2"]; d != (Bytes{Up: 5, Down: 100_000}) || len(st.Devices) != 1 {
+		t.Fatalf("the device's own totals are %+v", st.Devices)
+	}
 }
 
 func TestUDPGoesThroughTheTunnel(t *testing.T) {

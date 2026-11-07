@@ -1,3 +1,5 @@
+# Actions > Build IPA > Run workflow. Builds an unsigned Release IPA to sign with your own
+# certificate (a signing app, Sideloadly, AltStore...) and install without a Mac. See the README.
 name: Build IPA
 
 on:
@@ -17,12 +19,12 @@ jobs:
 
     steps:
       - name: Download source
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Install Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: WireGuard/go.mod
           cache-dependency-path: WireGuard/go.sum
@@ -31,47 +33,45 @@ jobs:
         run: brew install xcodegen
 
       - name: Generate Xcode project
-        run: |
-          chmod +x scripts/build-wireguard.sh
-          xcodegen generate
+        run: xcodegen generate # builds the WireGuard server with Go first
 
       - name: Build unsigned app
         run: |
           set -o pipefail
           xcodebuild \
-            -project Tether.xcodeproj \
-            -scheme Tether \
+            -project Flux.xcodeproj \
+            -scheme Flux \
             -configuration Release \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
-            -derivedDataPath "$RUNNER_TEMP/TetherBuild" \
-            APP_BUNDLE_ID=com.personal.tether \
+            -derivedDataPath "$RUNNER_TEMP/FluxBuild" \
+            APP_BUNDLE_ID=com.personal.flux \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM="" \
-            build 2>&1 | tee "$RUNNER_TEMP/tether-build.log"
+            build 2>&1 | tee "$RUNNER_TEMP/flux-build.log"
 
       - name: Package IPA
         run: |
-          mkdir -p "$RUNNER_TEMP/TetherIPA/Payload"
+          mkdir -p "$RUNNER_TEMP/FluxIPA/Payload"
           ditto \
-            "$RUNNER_TEMP/TetherBuild/Build/Products/Release-iphoneos/Tether.app" \
-            "$RUNNER_TEMP/TetherIPA/Payload/Tether.app"
-          cd "$RUNNER_TEMP/TetherIPA"
-          /usr/bin/zip -qry Tether-unsigned.ipa Payload
+            "$RUNNER_TEMP/FluxBuild/Build/Products/Release-iphoneos/Flux.app" \
+            "$RUNNER_TEMP/FluxIPA/Payload/Flux.app"
+          cd "$RUNNER_TEMP/FluxIPA"
+          /usr/bin/zip -qry Flux-unsigned.ipa Payload
 
       - name: Upload IPA
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: Tether-unsigned
-          path: ${{ runner.temp }}/TetherIPA/Tether-unsigned.ipa
+          name: Flux-unsigned
+          path: ${{ runner.temp }}/FluxIPA/Flux-unsigned.ipa
           if-no-files-found: error
 
       - name: Upload build log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: Tether-build-log
-          path: ${{ runner.temp }}/tether-build.log
+          name: Flux-build-log
+          path: ${{ runner.temp }}/flux-build.log
           if-no-files-found: ignore

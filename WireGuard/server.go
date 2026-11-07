@@ -1,4 +1,4 @@
-// Package main is Tether's WireGuard server, built as a C archive and linked into the app.
+// Package main is Flux's WireGuard server, built as a C archive and linked into the app.
 //
 // wireguard-go decrypts what the devices send, a gVisor userspace TCP/IP stack ends their TCP
 // connections and UDP flows, and each one is made again with the iPhone's own sockets. So to the
@@ -81,7 +81,7 @@ type Peer struct {
 // which device is a router. The first time wireguard-go drops a device's packet for its source
 // address, that device gets these ranges, see noticeRouter. wireguard-go gives each range to one
 // peer only, so there is one router at a time: the newest one that sent for others. Its traffic is
-// the router's, since Tether can't tell the devices behind it apart. The tunnel's own addresses
+// the router's, since Flux can't tell the devices behind it apart. The tunnel's own addresses
 // are left out, or a reply to a removed device's address would go to the router.
 var routedNets = append(without(netip.MustParsePrefix("10.0.0.0/8"), tunnelNet),
 	netip.MustParsePrefix("172.16.0.0/12"),
@@ -113,7 +113,20 @@ type Stats struct {
 	// Connected holds the tunnel addresses with a recent handshake, so the app can say which
 	// WireGuard device is set up and working, also before it sent any traffic.
 	Connected []string `json:"connected"`
+	// Devices holds each device's own totals since the server started, by tunnel address. A
+	// router's clients count as the router. A removed device's totals go, so a device that gets
+	// its address later starts from zero.
+	Devices map[string]Bytes `json:"devices"`
 }
+
+// Bytes is one device's totals.
+type Bytes struct {
+	Up   uint64 `json:"up"`
+	Down uint64 `json:"down"`
+}
+
+// counters are one device's totals, atomic for the same reason as the server's.
+type counters struct{ up, down atomic.Uint64 }
 
 type Server struct {
 	dev   *device.Device
@@ -128,6 +141,8 @@ type Server struct {
 	// up and down are the byte totals. Atomic, since every read and write of every connection
 	// adds to them, and a lock there would make them all take turns.
 	up, down atomic.Uint64
+	// byDevice holds a *counters for each tunnel address that sent or received anything.
+	byDevice sync.Map
 	now      func() time.Time // tests move the clock to age a handshake
 
 	// The handshake refresher, and SetPeers, read wireguard-go's status. Nothing on the packet path
@@ -157,19 +172,26 @@ type Server struct {
 	flows        map[netip.Addr]map[io.Closer]struct{} // open connections, to close a removed device's
 	cones        map[netip.AddrPort]*cone              // UDP, by device port, see udp.go
 	maxCones     int                                   // see the constant. Tests lower it
-	conesRunning sync.WaitGroup
+	conesRunning sync.WaitGroup                        // the cones' and the pingers' goroutines
+	pings        map[pingKey]*pinger                   // ICMP echo, see icmp.go
+	// listenPing opens the iPhone-side ICMP socket. Tests swap it for one that answers in memory,
+	// under mu.
+	listenPing func() (pingConn, error)
+	pingID     atomic.Uint32 // the echo identifiers the iPhone sends with, see icmp.go
 }
 
 // Start listens for WireGuard on host:port with the server's private key. Peers come from SetPeers.
 func Start(host netip.Addr, port int, privateKey [32]byte) (*Server, error) {
 	s := &Server{
-		peers:    map[[32]byte]netip.Addr{},
-		names:    map[string]netip.Addr{},
-		shaken:   map[netip.Addr]time.Time{},
-		now:      time.Now,
-		flows:    map[netip.Addr]map[io.Closer]struct{}{},
-		cones:    map[netip.AddrPort]*cone{},
-		maxCones: maxCones,
+		peers:      map[[32]byte]netip.Addr{},
+		names:      map[string]netip.Addr{},
+		shaken:     map[netip.Addr]time.Time{},
+		now:        time.Now,
+		flows:      map[netip.Addr]map[io.Closer]struct{}{},
+		cones:      map[netip.AddrPort]*cone{},
+		maxCones:   maxCones,
+		pings:      map[pingKey]*pinger{},
+		listenPing: listenICMP,
 		// Go's default keepalive probes every idle connection every 15 s, which keeps the cellular
 		// radio awake. Probing is still needed: when the device closes first, forwardTCP half-closes
 		// and waits for the remote, so a remote that silently went away would hold it forever.
@@ -197,6 +219,7 @@ func Start(host netip.Addr, port int, privateKey [32]byte) (*Server, error) {
 	s.stack.SetTransportProtocolOption(tcp.ProtocolNumber, &send)
 	s.stack.SetTransportProtocolOption(tcp.ProtocolNumber, &moderate)
 	s.tun = newStackTun()
+	s.tun.intercept = s.handlePing
 	if err := s.stack.CreateNIC(1, s.tun.ep); err != nil {
 		return nil, fmt.Errorf("create NIC: %v", err)
 	}
@@ -233,12 +256,15 @@ func (s *Server) Close() {
 	s.dev.Close() // closes the tun too
 	s.stack.Close()
 	s.mu.Lock()
-	var cones []*cone
+	var sockets []io.Closer
 	for _, c := range s.cones {
-		cones = append(cones, c)
+		sockets = append(sockets, c)
+	}
+	for _, p := range s.pings {
+		sockets = append(sockets, p)
 	}
 	s.mu.Unlock()
-	for _, c := range cones {
+	for _, c := range sockets {
 		c.Close()
 	}
 	s.conesRunning.Wait() // closing the socket ends them at once
@@ -395,6 +421,9 @@ func (s *Server) apply(want map[[32]byte]netip.Addr, router netip.Addr) error {
 		// clients' connections too, or their UDP flows would still count as its own.
 		if want[key] != addr || (addr == wasRouter && addr != router) {
 			delete(s.shaken, addr)
+			if want[key] != addr {
+				s.byDevice.Delete(addr) // the address may go to another device later
+			}
 			for c := range s.flows[addr] {
 				closing = append(closing, c)
 			}
@@ -422,12 +451,17 @@ func (s *Server) apply(want map[[32]byte]netip.Addr, router netip.Addr) error {
 func (s *Server) Stats() Stats {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	st := Stats{Up: s.up.Load(), Down: s.down.Load(), Connected: []string{}}
+	st := Stats{Up: s.up.Load(), Down: s.down.Load(), Connected: []string{}, Devices: map[string]Bytes{}}
 	for addr, at := range s.shaken {
 		if s.now().Sub(at) < onlineWithin {
 			st.Connected = append(st.Connected, addr.String())
 		}
 	}
+	s.byDevice.Range(func(k, v any) bool {
+		c := v.(*counters)
+		st.Devices[k.(netip.Addr).String()] = Bytes{Up: c.up.Load(), Down: c.down.Load()}
+		return true
+	})
 	return st
 }
 
@@ -557,12 +591,18 @@ func (s *Server) trackLocked(device netip.Addr, conns ...io.Closer) (untrack fun
 	}
 }
 
-// count adds n bytes to the totals.
-func (s *Server) count(up bool, n int) {
+// count adds n bytes to the totals and to device's own.
+func (s *Server) count(device netip.Addr, up bool, n int) {
+	c, ok := s.byDevice.Load(device)
+	if !ok {
+		c, _ = s.byDevice.LoadOrStore(device, &counters{})
+	}
 	if up {
 		s.up.Add(uint64(n))
+		c.(*counters).up.Add(uint64(n))
 	} else {
 		s.down.Add(uint64(n))
+		c.(*counters).down.Add(uint64(n))
 	}
 }
 
@@ -614,7 +654,7 @@ func (s *Server) forwardTCP(r *tcp.ForwarderRequest) {
 	// giving up, ends both, or the other direction could wait forever on a silent peer.
 	go func() {
 		defer wg.Done()
-		if err := s.copy(out, in, true); err != io.EOF {
+		if err := s.copy(out, in, device, true); err != io.EOF {
 			closeBoth()
 		} else if c, ok := out.(interface{ CloseWrite() error }); ok {
 			c.CloseWrite()
@@ -622,7 +662,7 @@ func (s *Server) forwardTCP(r *tcp.ForwarderRequest) {
 	}()
 	go func() {
 		defer wg.Done()
-		if err := s.copy(in, out, false); err != io.EOF {
+		if err := s.copy(in, out, device, false); err != io.EOF {
 			closeBoth()
 		} else {
 			in.CloseWrite()
@@ -634,12 +674,12 @@ func (s *Server) forwardTCP(r *tcp.ForwarderRequest) {
 
 // copy moves one direction of a TCP connection and counts it, until an error. A clean end
 // returns io.EOF.
-func (s *Server) copy(dst io.Writer, src io.Reader, up bool) error {
+func (s *Server) copy(dst io.Writer, src io.Reader, device netip.Addr, up bool) error {
 	buf := make([]byte, 65536)
 	for {
 		n, err := src.Read(buf)
 		if n > 0 {
-			s.count(up, n)
+			s.count(device, up, n)
 			if _, werr := dst.Write(buf[:n]); werr != nil {
 				return werr
 			}
@@ -652,11 +692,14 @@ func (s *Server) copy(dst io.Writer, src io.Reader, up bool) error {
 
 // stackTun is a tun.Device whose other end is the gVisor stack instead of the kernel.
 type stackTun struct {
-	ep       *channel.Endpoint
-	events   chan tun.Event
-	incoming chan *buffer.View
-	done     chan struct{}
-	once     sync.Once
+	ep *channel.Endpoint
+	// intercept sees each packet from a device first, and keeps the ones it returns true for out of
+	// the stack. ICMP echo goes this way, see icmp.go.
+	intercept func([]byte) bool
+	events    chan tun.Event
+	incoming  chan *buffer.View
+	done      chan struct{}
+	once      sync.Once
 }
 
 func newStackTun() *stackTun {
@@ -672,7 +715,7 @@ func newStackTun() *stackTun {
 }
 
 func (t *stackTun) File() *os.File           { return nil }
-func (t *stackTun) Name() (string, error)    { return "tether", nil }
+func (t *stackTun) Name() (string, error)    { return "flux", nil }
 func (t *stackTun) MTU() (int, error)        { return MTU, nil }
 func (t *stackTun) Events() <-chan tun.Event { return t.events }
 func (t *stackTun) BatchSize() int           { return 1 }
@@ -705,7 +748,7 @@ func (t *stackTun) Read(bufs [][]byte, sizes []int, offset int) (int, error) {
 func (t *stackTun) Write(bufs [][]byte, offset int) (int, error) {
 	for _, b := range bufs {
 		p := b[offset:]
-		if len(p) == 0 {
+		if len(p) == 0 || (t.intercept != nil && t.intercept(p)) {
 			continue
 		}
 		pkt := stack.NewPacketBuffer(stack.PacketBufferOptions{Payload: buffer.MakeWithData(p)})

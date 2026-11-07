@@ -1,16 +1,18 @@
 // File map (all in Sources/):
-//   TetherApp.swift     the @main App only
+//   FluxApp.swift     the @main App only
 //   Model.swift         Model, Interfaces
 //   Traffic.swift       the server's byte counters, Foundation only
+//   Usage.swift         how much was shared today, in all and by device, Foundation only
 //   Format.swift        bytes and speeds as text
-//   MainView.swift      MainView (the main screen), StatusCard, and the speeds
+//   MainView.swift      MainView (the main screen, a bento of glass tiles), StatusCard, and the speeds
+//   Theme.swift         the aurora background, the glass tiles and the brand colours
 //   DevicesView.swift   the QR code for the next device, and a device's own screen
 //   AppExpiry.swift     when a sideloaded build stops opening, and the warning before it
 //   DemoMode.swift      fake app state for the UI tests, Debug builds only
 //   Shortcuts.swift     the Shortcuts actions; ShortcutReply.swift has what they say, Foundation only
 //   WireGuardSetup.swift  the hotspot address, WireGuard keys, devices and client configs, Foundation only
 //   WireGuardServer.swift  runs the WireGuard server (WireGuard/, Go)
-//   KeepAlive.swift, KeepAlivePolicy.swift  the silent sound that keeps Tether running
+//   KeepAlive.swift, KeepAlivePolicy.swift  the silent sound that keeps Flux running
 
 import OSLog
 import SwiftUI
@@ -18,7 +20,7 @@ import UIKit
 
 @MainActor
 final class Model: ObservableObject {
-    /// The screen and the Shortcuts actions share it. An action can launch Tether in the
+    /// The screen and the Shortcuts actions share it. An action can launch Flux in the
     /// background, with no screen, and this is all that runs then.
     static let shared = Model()
 
@@ -28,13 +30,15 @@ final class Model: ObservableObject {
     @Published var upSpeed = 0.0
     /// When this build stops opening, from its provisioning profile. Nil without one.
     var expires: Date? = AppExpiry.installed { didSet { refreshExpiryWarning() } }
-    /// "Tether stops opening in 2 days ...", in the last three days before `expires`. Refreshed by
+    /// "Flux stops opening in 2 days ...", in the last three days before `expires`. Refreshed by
     /// the 1 s sampler, so it appears on time even on a screen where nothing else changes.
     @Published private(set) var expiryWarning: String?
     /// The devices that have connected, in the order they first did. Their keys are in the Keychain.
     @Published private(set) var wireGuardPeers: [WireGuardSetup.Peer]
     /// Behind the QR code on the main screen, see `WireGuardSetup.ready`.
     @Published private(set) var wireGuardReady: WireGuardSetup.Peer?
+    /// The DNS servers in the configs of devices added from now on, see `WireGuardSetup.dns`.
+    @Published private(set) var wireGuardDNS: String
     /// Why WireGuard isn't running while the hotspot is on, shown on the WireGuard screen.
     @Published private(set) var wireGuardProblem: String?
     /// The hotspot is on and WireGuard runs. `running` alone is only the hotspot.
@@ -42,17 +46,25 @@ final class Model: ObservableObject {
     /// The tunnel addresses of the WireGuard devices that are connected. Read with every sample
     /// while the app is on screen.
     @Published var wireGuardConnected: Set<String> = []
+    /// How much was shared today, in all and by device id. Kept across launches.
+    @Published var usageToday: Usage
+
+    private var usageMeter: UsageMeter
+    private let usageStore = UsageStore()
+    /// When `usageToday` was last saved. It's saved at most every 10 seconds, and when Flux
+    /// leaves the screen.
+    private var usageSavedAt = Date.distantPast
 
     private let wireGuard = WireGuardServer()
     private let wireGuardDevices: WireGuardDevices
     private let keepAlive = KeepAlive()
-    private static let logger = Logger(subsystem: "com.vsvirskyi.phoneshare", category: "tether")
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "flux", category: "flux")
     /// Only the on-screen sampler publishes connections and speeds, so it runs only while the app is on screen.
     /// False in a launch from a Shortcuts action, which happens in the background.
     private var sceneActive = UIApplication.shared.applicationState != .background
 
     #if DEBUG
-    /// Set in a demo launch (`-TetherDemo`, see DemoMode.swift). Nothing real runs then.
+    /// Set in a demo launch (`-FluxDemo`, see DemoMode.swift). Nothing real runs then.
     private var demo: DemoState?
     #endif
 
@@ -66,6 +78,14 @@ final class Model: ObservableObject {
         self.wireGuardDevices = WireGuardDevices(secrets: secrets)
         self.wireGuardPeers = wireGuardDevices.setup.peers
         self.wireGuardReady = wireGuardDevices.setup.ready
+        self.wireGuardDNS = wireGuardDevices.setup.dnsServers
+        #if DEBUG
+        let usage = demo == nil ? UsageStore().load() : Usage(day: Usage.day(of: Date()))
+        #else
+        let usage = UsageStore().load()
+        #endif
+        self.usageToday = usage
+        self.usageMeter = UsageMeter(today: usage)
         #if DEBUG
         if let demo {
             self.demo = demo
@@ -111,9 +131,9 @@ final class Model: ObservableObject {
     }
 
     private var watcher: Task<Void, Never>?
-    /// When the hotspot went away, or Tether was last on screen since. Nil while the hotspot is on.
-    /// A launch starts long past, so only opening Tether or Start Tether (`wake`) gives it the 10
-    /// minutes. "Is Tether Sharing?" launches Tether in the background too, and only reports.
+    /// When the hotspot went away, or Flux was last on screen since. Nil while the hotspot is on.
+    /// A launch starts long past, so only opening Flux or Start Flux (`wake`) gives it the 10
+    /// minutes. "Is Flux Sharing?" launches Flux in the background too, and only reports.
     private var waitingSince: Date? = .distantPast
     private var sampler: Task<Void, Never>?
     private var lastSample: (up: UInt64, down: UInt64, at: Date)?
@@ -125,6 +145,7 @@ final class Model: ObservableObject {
         let hotspot = Interfaces.hotspotAddress()
         if running, hotspot != boundHost {
             append("hotspot address gone or changed, stopping")
+            recordUsage(saving: true) // what the devices used since the last reading
             wireGuard.stop()
             running = false
         }
@@ -144,14 +165,14 @@ final class Model: ObservableObject {
     }
 
     /// Plays the silent sound while the hotspot is on, and for a while after it goes, see
-    /// `KeepAlivePolicy`. Once it stops, iOS suspends Tether, and it starts again when opened.
+    /// `KeepAlivePolicy`. Once it stops, iOS suspends Flux, and it starts again when opened.
     private func keepAliveWhileSharing(hotspot: Bool, now: Date = Date()) {
         // On screen the wait keeps starting again, so the sound never stops there, and the 10 minutes
         // run from leaving the screen, to turn on Personal Hotspot in Settings, say.
         if hotspot { waitingSince = nil } else if sceneActive || waitingSince == nil { waitingSince = now }
         let plays = KeepAlivePolicy.plays(waitingSince: waitingSince, now: now)
         if plays { keepAlive.start() } else if keepAlive.playing {
-            append("no hotspot for 10 minutes, letting iOS suspend Tether until it's opened")
+            append("no hotspot for 10 minutes, letting iOS suspend Flux until it's opened")
             keepAlive.stop()
         }
     }
@@ -165,8 +186,8 @@ final class Model: ObservableObject {
         }
         if let error = wireGuardDevices.loadError {
             wireGuardFailed(wireGuardDevices.needsReset
-                ? "Its saved keys can't be read. Start over with new keys to use it."
-                : "Its keys can't be read yet. Unlock this iPhone once.", error)
+                ? String(localized: "Its saved keys can't be read. Start over with new keys to use it.")
+                : String(localized: "Its keys can't be read yet. Unlock this iPhone once."), error)
             return
         }
         do {
@@ -174,7 +195,7 @@ final class Model: ObservableObject {
             wireGuardProblem = nil
             append("WireGuard on \(hotspot):\(WireGuardSetup.port), \(wireGuardPeers.count) devices")
         } catch {
-            wireGuardFailed("It couldn't start: \(error)", error)
+            wireGuardFailed(String(localized: "It couldn't start: \(String(describing: error))"), error)
         }
     }
 
@@ -184,9 +205,9 @@ final class Model: ObservableObject {
         append("WireGuard not started: \(error)")
     }
 
-    /// The same as opening Tether, for Start Tether in Shortcuts: the 10 minutes' wait for the hotspot
+    /// The same as opening Flux, for Start Flux in Shortcuts: the 10 minutes' wait for the hotspot
     /// starts again, and sharing starts now if the hotspot is on. True when the silent sound plays,
-    /// so iOS keeps Tether running after the action ends.
+    /// so iOS keeps Flux running after the action ends.
     @discardableResult
     func wake() -> Bool {
         #if DEBUG
@@ -218,14 +239,20 @@ final class Model: ObservableObject {
         if running, let boundHost { startWireGuard(on: boundHost) }
     }
 
-    /// Only the name Tether shows changes. The tunnel already imported keeps its own name.
+    /// Only the name Flux shows changes. The tunnel already imported keeps its own name.
     func renameWireGuardDevice(_ id: WireGuardSetup.Peer.ID, to name: String) {
         if !wireGuardDevices.rename(id, to: name) { append("WireGuard: the new name couldn't be saved") }
         publishSetup()
     }
 
     func removeWireGuardDevice(_ id: WireGuardSetup.Peer.ID) {
-        if !wireGuardDevices.remove(id) { append("WireGuard: the removal couldn't be saved, the device stays") }
+        if !wireGuardDevices.remove(id) {
+            append("WireGuard: the removal couldn't be saved, the device stays")
+        } else {
+            recordUsage() // its last bytes, before the server forgets its counter
+            usageMeter.forget(device: id.uuidString)
+            publishUsage(saving: true)
+        }
         wireGuardPeersChanged()
     }
 
@@ -236,6 +263,17 @@ final class Model: ObservableObject {
     private func publishSetup() {
         wireGuardPeers = wireGuardDevices.setup.peers
         wireGuardReady = wireGuardDevices.setup.ready
+        wireGuardDNS = wireGuardDevices.setup.dnsServers
+    }
+
+    /// The DNS servers for devices added from now on: the QR code changes, devices already added
+    /// keep theirs. `servers` comes from `WireGuardSetup.normalizedDNS`. False when it couldn't be saved.
+    @discardableResult
+    func setWireGuardDNS(_ servers: String) -> Bool {
+        let saved = wireGuardDevices.setDNS(servers)
+        if !saved { append("WireGuard: the DNS servers couldn't be saved") }
+        publishSetup()
+        return saved
     }
 
     private func wireGuardPeersChanged() {
@@ -262,6 +300,7 @@ final class Model: ObservableObject {
         defer { lastSample = (snap.bytesUp, snap.bytesDown, now) }
         let connected = wireGuard.connectedAddresses // from the snapshot above
         if connected != wireGuardConnected { wireGuardConnected = connected }
+        recordUsage(snap, now: now)
         claimReady(connected: connected)
         guard let last = lastSample else { return } // the first sample has nothing to compare with
         let seconds = now.timeIntervalSince(last.at)
@@ -283,8 +322,32 @@ final class Model: ObservableObject {
     /// connects then is listed too and the next one gets a new code.
     private func claimReadyInBackground() {
         guard running else { return }
-        _ = wireGuard.snapshot() // refreshes connectedAddresses
+        let snap = wireGuard.snapshot() // refreshes connectedAddresses
+        recordUsage(snap)
         claimReady(connected: wireGuard.connectedAddresses)
+    }
+
+    /// Adds what the devices used since the last reading to today's figures. `snap` is a
+    /// `snapshot()` just taken, or nil to take one.
+    private func recordUsage(_ snap: TrafficTotals? = nil, now: Date = Date(), saving: Bool = false) {
+        guard wireGuard.running else { return }
+        let total = snap ?? wireGuard.snapshot()
+        // Every device the server lets in, the one behind the QR code included: it keeps its id
+        // when it's listed.
+        var owners: [String: String] = [:]
+        for peer in wireGuardDevices.setup.serverPeers { owners[peer.address] = peer.id.uuidString }
+        usageMeter.record(total: total, devices: wireGuard.deviceTotals, owners: owners, now: now)
+        publishUsage(now: now, saving: saving)
+    }
+
+    private func publishUsage(now: Date = Date(), saving: Bool = false) {
+        let today = usageMeter.today
+        guard today != usageToday || saving else { return }
+        usageToday = today
+        if saving || now.timeIntervalSince(usageSavedAt) >= 10 {
+            usageStore.save(today)
+            usageSavedAt = now
+        }
     }
 
     /// The server's counters never go backwards. The guard is only a safety net.
@@ -301,11 +364,12 @@ final class Model: ObservableObject {
         }
         observe(UIApplication.didBecomeActiveNotification) { model in
             model.sceneActive = true
-            // Opening Tether starts the wait again, so there's time to turn on Personal Hotspot in Settings.
+            // Opening Flux starts the wait again, so there's time to turn on Personal Hotspot in Settings.
             model.wake()
             model.startSampler() // samples at once, then every second again
         }
         observe(UIApplication.willResignActiveNotification) { model in
+            model.publishUsage(saving: true)
             model.sceneActive = false
             model.sampler?.cancel()
             model.lastSample = nil // or the first speed back on screen averages the whole time away

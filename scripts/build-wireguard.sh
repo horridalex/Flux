@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds WireGuard/ (Go) into WireGuard/build/TetherWG.xcframework, for the iPhone, the
+# Builds WireGuard/ (Go) into WireGuard/build/FluxWG.xcframework, for the iPhone, the
 # simulator, and the Mac, where `swift test` links it to test WireGuardServer.swift. xcodegen runs it before generating the project (preGenCommand in project.yml).
 # It skips the build when the Go sources and the Go version haven't changed since the last one. Needs Go, see go.mod.
 set -euo pipefail
@@ -13,7 +13,7 @@ command -v go >/dev/null || { echo "Go is needed to build WireGuard/, see https:
 
 # The Go version is in the hash too, so a Go upgrade (a fix in net, say) rebuilds.
 hash=$({ cd "$src" && cat go.mod go.sum ./*.go "$root/scripts/build-wireguard.sh" && go version; } | shasum | cut -d' ' -f1)
-if [[ -d $out/TetherWG.xcframework && -f $stamp && $(cat "$stamp") == "$hash" ]]; then
+if [[ -d $out/FluxWG.xcframework && -f $stamp && $(cat "$stamp") == "$hash" ]]; then
     exit 0
 fi
 
@@ -32,7 +32,7 @@ build() {
         CC="$(xcrun --sdk "$sdk" -f clang) -isysroot $sysroot -target $target" \
         CGO_CFLAGS="-isysroot $sysroot -target $target" \
         CGO_LDFLAGS="-isysroot $sysroot -target $target" \
-        go -C "$src" build -buildmode=c-archive -trimpath -ldflags=-w -o "$dir/libtetherwg.a" .
+        go -C "$src" build -buildmode=c-archive -trimpath -ldflags=-w -o "$dir/libfluxwg.a" .
 }
 
 build iphoneos arm64 arm64-apple-ios17.0
@@ -43,25 +43,25 @@ build macosx amd64 x86_64-apple-macos14.0
 
 for platform in iphoneos iphonesimulator macosx; do
     mkdir -p "$out/$platform/Headers"
-    cp "$out/$platform-arm64/libtetherwg.h" "$out/$platform/Headers/TetherWG.h"
+    cp "$out/$platform-arm64/libfluxwg.h" "$out/$platform/Headers/FluxWG.h"
     cat > "$out/$platform/Headers/module.modulemap" <<'EOF'
-module TetherWG {
-    header "TetherWG.h"
+module FluxWG {
+    header "FluxWG.h"
     link "resolv"
     export *
 }
 EOF
 done
-cp "$out/iphoneos-arm64/libtetherwg.a" "$out/iphoneos/"
-lipo -create "$out/macosx-arm64/libtetherwg.a" "$out/macosx-amd64/libtetherwg.a" \
-    -output "$out/macosx/libtetherwg.a"
-lipo -create "$out/iphonesimulator-arm64/libtetherwg.a" "$out/iphonesimulator-amd64/libtetherwg.a" \
-    -output "$out/iphonesimulator/libtetherwg.a"
+cp "$out/iphoneos-arm64/libfluxwg.a" "$out/iphoneos/"
+lipo -create "$out/macosx-arm64/libfluxwg.a" "$out/macosx-amd64/libfluxwg.a" \
+    -output "$out/macosx/libfluxwg.a"
+lipo -create "$out/iphonesimulator-arm64/libfluxwg.a" "$out/iphonesimulator-amd64/libfluxwg.a" \
+    -output "$out/iphonesimulator/libfluxwg.a"
 
 xcodebuild -create-xcframework \
-    -library "$out/iphoneos/libtetherwg.a" -headers "$out/iphoneos/Headers" \
-    -library "$out/iphonesimulator/libtetherwg.a" -headers "$out/iphonesimulator/Headers" \
-    -library "$out/macosx/libtetherwg.a" -headers "$out/macosx/Headers" \
-    -output "$out/TetherWG.xcframework" >/dev/null
+    -library "$out/iphoneos/libfluxwg.a" -headers "$out/iphoneos/Headers" \
+    -library "$out/iphonesimulator/libfluxwg.a" -headers "$out/iphonesimulator/Headers" \
+    -library "$out/macosx/libfluxwg.a" -headers "$out/macosx/Headers" \
+    -output "$out/FluxWG.xcframework" >/dev/null
 rm -rf "$out"/iphoneos* "$out"/iphonesimulator* "$out"/macosx*
 echo "$hash" > "$stamp"
