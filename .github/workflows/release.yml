@@ -1,0 +1,134 @@
+# Makes a release: runs CI, builds the unsigned IPA with this version, and puts it on the
+# repository's Releases page as Flux-<version>.ipa, where it stays for good.
+#
+# Two ways to start one:
+#   - Actions > Release > Run workflow, pick the branch (main), and type a version like 1.2.
+#     The tag v1.2 is made on that branch's latest commit.
+#   - Push a tag: git tag v1.2 && git push origin v1.2
+#
+# The version is the one in Settings > General > About > Flux, and the build number after it
+# stays the commit count. project.yml's MARKETING_VERSION is only for builds outside a release.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version, like 1.2 or 1.2.1
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.version || github.ref_name }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # First, so a typo fails in seconds instead of after CI.
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - id: check
+        env:
+          INPUT: ${{ inputs.version }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          v="${INPUT:-${TAG#v}}"
+          v="${v#v}"
+          if ! [[ $v =~ ^[0-9]+(\.[0-9]+){1,2}$ ]]; then
+            echo "::error::'$v' isn't a version like 1.2 or 1.2.1"
+            exit 1
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+  test:
+    needs: version
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  build:
+    needs: [version, test]
+    runs-on: macos-26
+    timeout-minutes: 45
+    permissions:
+      contents: write # to make the release and its tag
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the build number is the commit count, see project.yml
+
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: WireGuard/go.mod
+          cache-dependency-path: WireGuard/go.sum
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate # builds the WireGuard server with Go first
+
+      - name: Build unsigned app
+        run: |
+          xcodebuild \
+            -project Flux.xcodeproj \
+            -scheme Flux \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/FluxBuild" \
+            APP_BUNDLE_ID=com.personal.flux \
+            MARKETING_VERSION="$VERSION" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            build 2>&1 | tee "$RUNNER_TEMP/flux-build.log"
+
+      - name: Check the version in the app
+        run: |
+          plist="$RUNNER_TEMP/FluxBuild/Build/Products/Release-iphoneos/Flux.app/Info.plist"
+          got=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$plist")
+          build=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$plist")
+          echo "Flux $got ($build)"
+          [[ $got == "$VERSION" ]] || { echo "::error::the app says $got, not $VERSION"; exit 1; }
+
+      - name: Package IPA
+        run: |
+          mkdir -p "$RUNNER_TEMP/FluxIPA/Payload"
+          ditto "$RUNNER_TEMP/FluxBuild/Build/Products/Release-iphoneos/Flux.app" \
+            "$RUNNER_TEMP/FluxIPA/Payload/Flux.app"
+          cd "$RUNNER_TEMP/FluxIPA"
+          /usr/bin/zip -qry "Flux-$VERSION.ipa" Payload
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ipa="$RUNNER_TEMP/FluxIPA/Flux-$VERSION.ipa"
+          # Run again for the same version, it replaces the IPA instead of failing.
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            gh release upload "v$VERSION" "$ipa" --clobber
+          else
+            gh release create "v$VERSION" "$ipa" --target "$GITHUB_SHA" \
+              --title "Flux $VERSION" --generate-notes
+          fi
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: Flux-${{ env.VERSION }}-build-log
+          path: ${{ runner.temp }}/flux-build.log
+          if-no-files-found: ignore
