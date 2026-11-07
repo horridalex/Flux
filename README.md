@@ -19,14 +19,24 @@ iPad, Mac or router  ──hotspot──▶  Tether on iPhone  ──cellular─
 (WireGuard client)
 ```
 
-Under the hood Tether runs a WireGuard server on UDP port 51820, on the hotspot address `172.20.10.1`. Each device connects with its WireGuard client, and everything goes through, calls and games included. WireGuard's own code decrypts the traffic and a small TCP/IP stack inside Tether ([gVisor](https://gvisor.dev)) makes each connection again from the iPhone. UDP behaves like a full-cone NAT, so calls and games can connect directly. No VPN entitlement or network extension is needed on the iPhone.
+Under the hood Tether runs a WireGuard server on UDP port 51820, on the hotspot address `172.20.10.1`. Each device connects with its WireGuard client, and everything goes through, calls and games included. WireGuard's own code decrypts the traffic and a small TCP/IP stack inside Tether ([gVisor](https://gvisor.dev)) makes each connection again from the iPhone. UDP behaves like a full-cone NAT, so calls and games can connect directly, and `ping` works too: the iPhone sends it again and only a host that really answers replies. No VPN entitlement or network extension is needed on the iPhone.
 
 ## Install Tether on your iPhone
 
-You need an iPhone with Personal Hotspot, and a Mac with Xcode. A free Apple ID is enough.
+You need an iPhone with Personal Hotspot, and either a Mac with Xcode or your own signing certificate. A free Apple ID is enough with a Mac.
+
+### Without a Mac: the IPA from GitHub Actions
+
+1. Fork this repository, then Actions > **Build IPA** > Run workflow. It builds on a GitHub-hosted Mac in about 15 minutes.
+2. Download `Tether-unsigned` from the run's artifacts. It holds `Tether-unsigned.ipa`, built with the bundle ID `com.personal.tether` and not signed.
+3. Sign and install it with your own certificate, in a signing app or with a tool like Sideloadly or AltStore. Keep the same bundle ID every time you install a new build: a signing tool that changes it installs a second Tether with new keys, and every device has to be added again.
+
+Tether shows on its main screen when the certificate has three days or less left, whatever certificate signed it.
+
+### With a Mac and Xcode
 
 1. Install [XcodeGen](https://github.com/yonaskolb/XcodeGen) and Go (`brew install xcodegen go`). `xcodegen generate` builds the WireGuard part with Go first, see `scripts/build-wireguard.sh`.
-2. Open `project.yml` and set `DEVELOPMENT_TEAM` to your own team ID, and `APP_BUNDLE_ID` to something unique like `com.yourname.tether`. You'll find your team ID in Xcode under Settings > Accounts.
+2. Open `project.yml` and set `DEVELOPMENT_TEAM` to your own team ID (it's empty), and `APP_BUNDLE_ID` to something unique like `com.yourname.tether` if `com.personal.tether` is taken. You'll find your team ID in Xcode under Settings > Accounts.
 3. Build and install:
 
    ```sh
@@ -55,6 +65,8 @@ Tether's main screen always shows a QR code for the next device, with the steps 
 
 Each device has its own key. Removing a device in Tether locks it out without touching the others.
 
+Devices use Cloudflare's DNS (1.1.1.1) unless you choose other servers under Settings > DNS on Tether's main screen: Google, Quad9, AdGuard (which blocks ads), or up to four IPv4 addresses of your own. The choice goes into the QR code, so it's for devices you add from then on. A device already added keeps its DNS: change it in that device's WireGuard tunnel, or remove the device and add it again.
+
 ## Start it from Shortcuts
 
 Once no device has been on the hotspot for 10 minutes, iOS suspends Tether, and it has to be opened again before the hotspot comes back. Shortcuts can do that for you. Tether adds two actions to the Shortcuts app, with nothing to set up:
@@ -72,11 +84,12 @@ iOS has no automation for "Personal Hotspot turned on", so let one shortcut turn
 
 ## Good to know
 
-- **It stops opening after 7 days** when signed with a free Apple ID. Tether says on its main screen when it has three days or less left. Build and install it again (step 3 above) before then. Your devices and settings stay.
+- **It stops opening when its certificate expires**: after 7 days with a free Apple ID, or when your own certificate does. Tether says on its main screen when it has three days or less left. Build and install it again before then, with the same bundle ID. Your devices and settings stay.
 - **Keep it running.** Tether plays silent audio so iOS doesn't suspend it in the background. It mixes with other audio, so your music keeps playing, and it picks up again after a call or Siri. With no device on the hotspot for 10 minutes it stops, to save battery, and iOS suspends Tether. Open it again, or run Start Tether, before you turn the hotspot back on, and after a restart.
 - **It only listens on the hotspot**, never on other Wi-Fi networks. WireGuard only lets in devices you added.
 - **Devices reach what the iPhone reaches**, private networks included. With a VPN on the iPhone, your devices use it too, so its networks are open to them and to everyone behind a travel router you added.
-- **The main screen** shows whether Tether is sharing, the QR code for the next device, your devices with Connected or Not connected, and the current download and upload speed. To stop sharing, turn off Personal Hotspot.
+- **The main screen** shows whether Tether is sharing, the QR code for the next device, your devices with Connected or Not connected, the current download and upload speed, and how much was used today. A device's own screen shows what it used today, and a travel router's includes every device behind it. Today's figures start again at midnight. To stop sharing, turn off Personal Hotspot.
+- **In English and Korean**, following the iPhone's language.
 - **The traffic leaves as your iPhone's.** If your iPhone runs a VPN, shared traffic goes through that VPN too.
 - **Your carrier can still notice.** Tether hides where the traffic comes from, not what it is. A Mac's software updates or an iPad's apps still look like a Mac or an iPad to a carrier that looks closely. Many carrier contracts don't allow tethering workarounds, and a carrier can slow down or close a line that breaks them. Check yours. Using Tether is your call and your risk.
 - **Not for the App Store.** Apple doesn't allow the silent-audio trick, so you build and install Tether yourself.
@@ -91,6 +104,8 @@ Sources/Model.swift          finds the hotspot, starts the server, samples traff
 Sources/MainView.swift       the main screen; DevicesView.swift has the QR code and the device screen
 Sources/KeepAlive.swift      silent audio to stay alive in the background
 Sources/Shortcuts.swift      the Start Tether and Is Tether Sharing? actions for Shortcuts and Siri
+Sources/Usage.swift          today's usage, in all and by device
+Sources/ko.lproj/            the Korean text; the English is in the code
 Sources/DemoMode.swift       fake app states for the UI tests (Debug builds only)
 Tests/                       unit tests, run on the Mac
 UITests/                     UI tests for every screen, run on the iOS Simulator
@@ -98,6 +113,8 @@ scripts/make-icon.swift      draws the app icon
 ```
 
 The file map at the top of Model.swift lists every source file.
+
+CI runs every test, the fuzzing and an app build on a GitHub-hosted Mac on each push (`.github/workflows/ci.yml`). The UI tests and the IPA build run on demand from the Actions tab.
 
 Run the unit tests with `swift test` (after `scripts/build-wireguard.sh` or `xcodegen generate`, since they link the WireGuard server), and the WireGuard server's own with `go -C WireGuard test ./...`. They start the real server on your Mac and talk to it over loopback, so you don't need a device. [TESTING.md](TESTING.md) covers the simulator UI tests and the checks by hand.
 
