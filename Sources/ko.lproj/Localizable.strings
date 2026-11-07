@@ -105,3 +105,7 @@
 
 /* The Control Center button's intent, in the app too */
 "Wakes Flux, so it shares when a device joins Personal Hotspot." = "기기가 개인용 핫스팟에 연결되면 공유하도록 Flux를 깨웁니다.";
+
+/* The speed card's two sides */
+"Download" = "다운로드";
+"Upload" = "업로드";

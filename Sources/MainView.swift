@@ -26,24 +26,22 @@ struct MainView: View {
                     // Above the QR code, so a reason it doesn't work and the way out are both here.
                     WireGuardProblemSection(model: model)
 
-                    if model.sharing || model.usageThisMonth.total > 0 {
-                        HStack(spacing: 12) {
-                            if model.sharing {
-                                Tile(title: "Now") {
-                                    SpeedRow(down: model.downSpeed, up: model.upSpeed)
-                                }
-                            }
-                            // The tile opens the last 30 days and the monthly limit.
-                            NavigationLink { UsageView(model: model) } label: {
-                                Tile(title: "Used today") {
-                                    UsageSummary(bytes: model.usageToday.all, month: model.usageThisMonth.total,
-                                                 limit: model.usageLimit.bytes)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("usage.today")
+                    if model.sharing {
+                        Tile(title: "Now") {
+                            SpeedRow(down: model.downSpeed, up: model.upSpeed)
                         }
-                        .fixedSize(horizontal: false, vertical: true) // both tiles as tall as the taller one
+                    }
+
+                    if model.sharing || model.usageThisMonth.total > 0 {
+                        // The card opens the last 30 days and the monthly limit.
+                        NavigationLink { UsageView(model: model) } label: {
+                            UsageSummary(bytes: model.usageToday.all, month: model.usageThisMonth.total,
+                                         limit: model.usageLimit.bytes)
+                                .padding(20)
+                                .card()
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("usage.today")
                     }
 
                     if !model.wireGuardPeers.isEmpty {
@@ -131,18 +129,25 @@ struct UsageSummary: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        // The title and this month on the left, today's total big on the right.
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Used today")
+                    .font(.headline)
+                monthText
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(limit > 0 && month >= limit ? Color.orange : Color.primary)
+            }
+            Spacer(minLength: 8)
             Text(verbatim: Format.bytes(bytes.total))
-                .font(.title2.weight(.bold).monospacedDigit())
+                .font(.system(size: 28, weight: .heavy).monospacedDigit())
                 .contentTransition(.numericText())
                 .animation(.snappy, value: bytes.total)
-            Text("\(Image(systemName: "arrow.down")) \(Format.bytes(bytes.down))  \(Image(systemName: "arrow.up")) \(Format.bytes(bytes.up))")
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-            monthText
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(limit > 0 && month >= limit ? Color.orange : Color.secondary)
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.tertiary)
         }
+        .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Used today"))
         .accessibilityValue(Text("\(Format.bytes(bytes.total)), download \(Format.bytes(bytes.down)), upload \(Format.bytes(bytes.up))"))
@@ -168,19 +173,36 @@ struct SpeedRow: View {
     let up: Double
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("\(Image(systemName: "arrow.down")) \(Format.speed(down))")
-                .foregroundStyle(Direction.download)
-            Text("\(Image(systemName: "arrow.up")) \(Format.speed(up))")
-                .foregroundStyle(Direction.upload)
+        // Side by side: download on the left, upload on the right, a hairline between.
+        HStack(alignment: .top, spacing: 16) {
+            column("Download", arrow: "arrow.down", bps: down, color: Direction.download)
+            Rectangle()
+                .fill(Color(uiColor: .separator))
+                .frame(width: 1)
+            column("Upload", arrow: "arrow.up", bps: up, color: Direction.upload)
         }
-        .font(.title3.weight(.bold).monospacedDigit())
-        .contentTransition(.numericText())
-        .animation(.snappy, value: down)
-        .animation(.snappy, value: up)
+        .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Download \(Format.speed(down)), upload \(Format.speed(up))")
         .accessibilityIdentifier("traffic.speeds")
+    }
+
+    private func column(_ title: LocalizedStringKey, arrow: String, bps: Double, color: Color) -> some View {
+        let parts = Format.speedParts(bps)
+        return VStack(alignment: .leading, spacing: 2) {
+            Label(title, systemImage: arrow)
+                .font(.subheadline.weight(.medium))
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(verbatim: parts.number)
+                    .font(.system(size: 30, weight: .heavy, design: .default).monospacedDigit())
+                    .contentTransition(.numericText())
+                    .animation(.snappy, value: bps)
+                Text(verbatim: parts.unit)
+                    .font(.subheadline.weight(.bold))
+            }
+            .foregroundStyle(color)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
