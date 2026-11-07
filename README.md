@@ -32,7 +32,7 @@ Every version of Flux is on this repository's **Releases** page as `Flux-<versio
 
 Flux shows on its main screen when the certificate has three days or less left, whatever certificate signed it.
 
-To make a new version: Actions > **Release** > Run workflow, choose `main` and type the version, like `1.2`. It runs the tests, builds the IPA with that version, and publishes it on Releases with the changes since the last version, in about 10 minutes. Pushing a tag like `v1.2` does the same. Actions > **Build IPA** builds any branch without a version, for trying it out: that IPA is a run artifact, kept for 90 days.
+To make a new version: write what changed under `## 1.2` at the top of [CHANGELOG.md](CHANGELOG.md), then Actions > **Release** > Run workflow, choose `main` and type the version, like `1.2`. It runs the tests, builds the IPA with that version, and publishes it on Releases with that part of CHANGELOG.md as its notes, in about 10 minutes. Pushing a tag like `v1.2` does the same. Actions > **Build IPA** builds any branch without a version, for trying it out: that IPA is a run artifact, kept for 90 days.
 
 ### With a Mac and Xcode
 
