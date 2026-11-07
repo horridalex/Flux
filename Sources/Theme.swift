@@ -54,7 +54,7 @@ struct AuroraBackground: View {
         }
         // A veil of the system background, so secondary text on glass keeps its contrast where the
         // aurora is brightest. The accessibility audit's contrast test fails without it.
-        .overlay(Color(uiColor: .systemBackground).opacity(calm ? 0.55 : (scheme == .dark ? 0.3 : 0.4)))
+        .overlay(Color(uiColor: .systemBackground).opacity(calm ? 0.8 : (scheme == .dark ? 0.3 : 0.4)))
         .ignoresSafeArea()
         .accessibilityHidden(true)
     }
@@ -87,9 +87,14 @@ extension View {
         // accessibility audit failed text on it, primary included.
         let base = Color(uiColor: .systemBackground).opacity(0.55)
         if #available(iOS 26.0, *) {
-            self
-                .background(base, in: shape)
-                .glassEffect(tint.map { Glass.regular.tint($0) } ?? Glass.regular, in: shape)
+            // The glass goes behind the content, not around it: glassEffect on the tile itself
+            // renders its text vibrant, blended with what's behind, which the audit failed too.
+            self.background {
+                ZStack {
+                    Color.clear.glassEffect(tint.map { Glass.regular.tint($0) } ?? Glass.regular, in: shape)
+                    shape.fill(base)
+                }
+            }
         } else {
             self
                 .background(base, in: shape)
