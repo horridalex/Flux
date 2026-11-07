@@ -22,10 +22,10 @@
 "Devices" = "내 기기";
 "Connected" = "연결됨";
 "Not connected" = "연결 안 됨";
-"Add a device" = "기기 추가";
-"Add another device" = "다른 기기 추가";
+"Add a device" = "새 기기 연결하기";
+"Add another device" = "새 기기 연결하기";
 "QR code for the next device" = "다음 기기용 QR 코드";
-"Share as a file, for a Mac or a router" = "파일로 공유 (Mac 또는 라우터용)";
+"Share as a file, for a Mac or a router" = "파일로 공유하기";
 "Install WireGuard on it, tap + > Create from QR code and scan this. Then edit the tunnel and turn On-Demand on for this iPhone's hotspot only. A travel router imports the file and turns its VPN on." = "기기에 WireGuard를 설치하고 + > QR 코드로부터 생성을 눌러 이 코드를 스캔하세요. 그다음 터널을 편집해 주문형 활성화(On-Demand)를 이 iPhone의 핫스팟에서만 켜지도록 설정하세요. 여행용 라우터는 파일을 가져와 VPN을 켜면 됩니다.";
 "Device" = "기기";
 
@@ -122,6 +122,13 @@
 "Tap a device to rename or remove it" = "기기를 눌러 이름을 바꾸거나 지울 수 있어요";
 "Connected · %@" = "연결됨 · %@";
 "History" = "기록 보기";
-"Scan the QR code to connect right away" = "QR 코드를 찍으면 바로 연결돼요";
-"Show QR" = "QR 보기";
 "Done" = "완료";
+
+/* Adding a device */
+"Connect an iPad, a Mac or a travel router" = "iPad, Mac, 여행용 라우터를 연결할 수 있어요";
+"Connect" = "연결하기";
+"With a QR code" = "QR 코드로 연결";
+"For an iPad or an iPhone" = "iPad나 iPhone은 이렇게 연결해요";
+"With a file" = "파일로 연결";
+"For a Mac or a travel router" = "Mac이나 여행용 라우터는 이렇게 연결해요";
+"Send the file to it, by AirDrop say. On a Mac, import it in WireGuard; on a router, add it as a WireGuard client and turn its VPN on." = "AirDrop 등으로 파일을 보내세요. Mac은 WireGuard 앱에서 가져오고, 라우터는 VPN 설정에서 WireGuard 클라이언트로 추가한 뒤 VPN을 켜면 돼요.";

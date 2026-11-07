@@ -1,40 +1,51 @@
 import CoreImage.CIFilterBuiltins
 import SwiftUI
 
-/// Adding the next device: a row on the main screen whose button opens its QR code. The code is the
-/// ready device's config: the first time something connects with it, that device is listed and a
-/// new code takes its place.
+/// Adding the next device: a row on the main screen that opens the ways to connect it, a QR code
+/// or a file. Both hold the ready device's config: the first time something connects with it, that
+/// device is listed and a new one takes its place.
 struct AddDeviceSection: View {
     @ObservedObject var model: Model
     let first: Bool
-    @State private var showingCode = false
+    @State private var adding = false
 
     var body: some View {
         if model.wireGuardReady != nil {
-            HStack(spacing: 14) {
-                IconTile(systemName: "plus", color: Brand.accent)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(first ? LocalizedStringKey("Add a device") : LocalizedStringKey("Add another device"))
+            Button { adding = true } label: {
+                HStack(spacing: 14) {
+                    IconTile(systemName: "plus", color: Brand.accent)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(first ? LocalizedStringKey("Add a device") : LocalizedStringKey("Add another device"))
+                            .font(.body.weight(.bold))
+                        Text("Connect an iPad, a Mac or a travel router")
+                            .font(.subheadline)
+                            .foregroundStyle(Brand.subtext)
+                    }
+                    Spacer(minLength: 8)
+                    Text("Connect")
                         .font(.body.weight(.bold))
-                    Text("Scan the QR code to connect right away")
-                        .font(.subheadline)
-                        .foregroundStyle(Brand.subtext)
+                        .lineLimit(1)
+                        .fixedSize()
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 11)
+                        .foregroundStyle(Color.white)
+                        .background(Brand.action, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
-                Spacer(minLength: 8)
-                Button("Show QR") { showingCode = true }
-                    .buttonStyle(ViewButtonStyle())
-                    .accessibilityIdentifier("add.showQR")
+                .padding(24)
+                .card()
+                .contentShape(Rectangle())
             }
-            .padding(24)
-            .card()
-            .sheet(isPresented: $showingCode) {
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("add.showQR")
+            .sheet(isPresented: $adding) {
                 AddDeviceSheet(model: model, first: first)
             }
         }
     }
 }
 
-/// The ready device's QR code, its file for a Mac or a router, and the steps.
+/// The two ways to connect the next device: its QR code, for an iPad or an iPhone, and its file, for a
+/// Mac or a router.
 struct AddDeviceSheet: View {
     @ObservedObject var model: Model
     let first: Bool
@@ -45,34 +56,42 @@ struct AddDeviceSheet: View {
             ScrollView {
                 if let ready = model.wireGuardReady {
                     let code = ReadyCode.for(config: model.wireGuardConfig(for: ready))
-                    VStack(spacing: 20) {
-                        if let qr = code.qr {
-                            // Black on white whatever the theme, with a quiet zone, so any camera reads it.
-                            Image(uiImage: qr)
-                                .interpolation(.none)
-                                .resizable()
-                                .scaledToFit()
-                                .padding(16)
-                                .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                                .frame(maxWidth: 280)
-                                .accessibilityLabel("QR code for the next device")
-                                .accessibilityIdentifier("add.qr")
-                        }
-                        Text("Install WireGuard on it, tap + > Create from QR code and scan this. Then edit the tunnel and turn On-Demand on for this iPhone's hotspot only. A travel router imports the file and turns its VPN on.")
-                            .font(.subheadline)
-                            .foregroundStyle(Brand.subtext)
-                            .accessibilityIdentifier("add.steps")
-                        if let file = code.file {
-                            ShareLink(item: file) {
-                                Label("Share as a file, for a Mac or a router", systemImage: "square.and.arrow.up")
+                    VStack(spacing: 12) {
+                        Tile(title: "With a QR code", subtitle: "For an iPad or an iPhone") {
+                            if let qr = code.qr {
+                                // Black on white whatever the theme, with a quiet zone, so any camera reads it.
+                                Image(uiImage: qr)
+                                    .interpolation(.none)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .padding(16)
+                                    .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                                    .frame(maxWidth: 260)
+                                    .frame(maxWidth: .infinity)
+                                    .accessibilityLabel("QR code for the next device")
+                                    .accessibilityIdentifier("add.qr")
                             }
-                            .buttonStyle(ActionButtonStyle(fullWidth: true))
-                            .accessibilityIdentifier("add.share")
+                            Text("Install WireGuard on it, tap + > Create from QR code and scan this. Then edit the tunnel and turn On-Demand on for this iPhone's hotspot only. A travel router imports the file and turns its VPN on.")
+                                .font(.subheadline)
+                                .foregroundStyle(Brand.subtext)
+                                .accessibilityIdentifier("add.steps")
+                        }
+                        Tile(title: "With a file", subtitle: "For a Mac or a travel router") {
+                            Text("Send the file to it, by AirDrop say. On a Mac, import it in WireGuard; on a router, add it as a WireGuard client and turn its VPN on.")
+                                .font(.subheadline)
+                                .foregroundStyle(Brand.subtext)
+                            if let file = code.file {
+                                ShareLink(item: file) {
+                                    Label("Share as a file, for a Mac or a router", systemImage: "square.and.arrow.up")
+                                }
+                                .buttonStyle(ActionButtonStyle(fullWidth: true))
+                                .accessibilityIdentifier("add.share")
+                            }
                         }
                     }
-                    .padding(24)
+                    .padding(12)
                 } else {
-                    // Claimed while open: the next code is on its way.
+                    // Claimed while open: the next one is on its way.
                     ProgressView().padding(40)
                 }
             }
