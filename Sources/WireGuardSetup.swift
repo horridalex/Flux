@@ -14,7 +14,8 @@ struct WireGuardSetup: Codable, Equatable {
     static let port: UInt16 = 51820
     /// The same as MTU in WireGuard/server.go.
     static let mtu = 1420
-    static let dns = "1.1.1.1"
+    /// The DNS server a device uses when nothing else was chosen.
+    static let defaultDNS = "1.1.1.1"
     private static let subnet = "10.7.0."
 
     struct Peer: Codable, Hashable, Identifiable {
@@ -33,11 +34,35 @@ struct WireGuardSetup: Codable, Equatable {
     /// it in, and the first time it connects it joins `peers` and a new one takes its place. Nil
     /// only in a setup saved before there was one, or with all 253 addresses taken.
     var ready: Peer?
+    /// The DNS servers in the configs of devices added from now on, "8.8.8.8, 8.8.4.4" say. Nil
+    /// for `defaultDNS`, and in a setup saved before there was a choice.
+    var dns: String?
 
-    /// Everyone the server lets in: the devices, and whoever scans the QR code next.
-    var serverPeers: [Peer] { peers + (ready.map { [$0] } ?? []) }
+    var dnsServers: String { dns ?? Self.defaultDNS }
 
-    var serverPublicKey: Data { Self.publicKey(of: serverPrivateKey) }
+    /// The DNS servers for devices added from now on. Nil, or the default, goes back to the default.
+    mutating func setDNS(_ servers: String?) {
+        dns = servers == Self.defaultDNS ? nil : servers
+    }
+
+    /// "8.8.8.8 8.8.4.4" or "8.8.8.8,8.8.4.4" as a config's DNS line wants it, "8.8.8.8, 8.8.4.4".
+    /// Nil unless it's one to four IPv4 addresses: a device's tunnel has no IPv6 address, so an
+    /// IPv6 server would never answer.
+    static func normalizedDNS(_ text: String) -> String? {
+        let parts = text.split(whereSeparator: { $0 == "," || $0 == " " || $0 == "\n" }).map(String.init)
+        guard (1...4).contains(parts.count), parts.allSatisfy(isIPv4) else { return nil }
+        return parts.joined(separator: ", ")
+    }
+
+    /// Four numbers from 0 to 255, with no leading zeros.
+    private static func isIPv4(_ text: String) -> Bool {
+        let octets = text.split(separator: ".", omittingEmptySubsequences: false)
+        return octets.count == 4 && octets.allSatisfy { octet in
+            guard (1...3).contains(octet.count), octet.allSatisfy({ ("0"..."9").contains($0) }),
+                  let value = Int(octet), value <= 255 else { return false }
+            return octet.count == 1 || octet.first != "0"
+        }
+    }
 
     static func new() -> WireGuardSetup {
         WireGuardSetup(serverPrivateKey: Curve25519.KeyAgreement.PrivateKey().rawRepresentation, peers: [])
@@ -107,7 +132,7 @@ struct WireGuardSetup: Codable, Equatable {
         [Interface]
         PrivateKey = \(peer.privateKey.base64EncodedString())
         Address = \(peer.address)/32
-        DNS = \(Self.dns)
+        DNS = \(dnsServers)
         MTU = \(Self.mtu)
 
         [Peer]
@@ -245,6 +270,12 @@ final class WireGuardDevices {
             setup = before
             return false
         }
+    }
+
+    /// False when the change couldn't be saved, and then nothing changes.
+    @discardableResult
+    func setDNS(_ servers: String?) -> Bool {
+        change { $0.setDNS(servers) }
     }
 
     /// False when the change couldn't be saved, and then nothing changes.

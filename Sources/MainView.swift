@@ -56,6 +56,20 @@ struct MainView: View {
                 }
 
                 AddDeviceSection(model: model, first: model.wireGuardPeers.isEmpty)
+
+                Section("Settings") {
+                    NavigationLink { DNSView(model: model) } label: {
+                        // A plain row, like the devices above.
+                        HStack {
+                            Text("DNS")
+                            Spacer()
+                            Text(verbatim: model.wireGuardDNS)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    .accessibilityIdentifier("settings.dns")
+                }
             }
             // The status card says what this screen is, so the root drops the big title. It's still set,
             // because the screens pushed from here use it for their back button.

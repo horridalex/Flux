@@ -36,6 +36,8 @@ final class Model: ObservableObject {
     @Published private(set) var wireGuardPeers: [WireGuardSetup.Peer]
     /// Behind the QR code on the main screen, see `WireGuardSetup.ready`.
     @Published private(set) var wireGuardReady: WireGuardSetup.Peer?
+    /// The DNS servers in the configs of devices added from now on, see `WireGuardSetup.dns`.
+    @Published private(set) var wireGuardDNS: String
     /// Why WireGuard isn't running while the hotspot is on, shown on the WireGuard screen.
     @Published private(set) var wireGuardProblem: String?
     /// The hotspot is on and WireGuard runs. `running` alone is only the hotspot.
@@ -75,6 +77,7 @@ final class Model: ObservableObject {
         self.wireGuardDevices = WireGuardDevices(secrets: secrets)
         self.wireGuardPeers = wireGuardDevices.setup.peers
         self.wireGuardReady = wireGuardDevices.setup.ready
+        self.wireGuardDNS = wireGuardDevices.setup.dnsServers
         #if DEBUG
         let usage = demo == nil ? usageStore.load() : Usage(day: Usage.day(of: Date()))
         #else
@@ -259,6 +262,17 @@ final class Model: ObservableObject {
     private func publishSetup() {
         wireGuardPeers = wireGuardDevices.setup.peers
         wireGuardReady = wireGuardDevices.setup.ready
+        wireGuardDNS = wireGuardDevices.setup.dnsServers
+    }
+
+    /// The DNS servers for devices added from now on: the QR code changes, devices already added
+    /// keep theirs. `servers` comes from `WireGuardSetup.normalizedDNS`. False when it couldn't be saved.
+    @discardableResult
+    func setWireGuardDNS(_ servers: String) -> Bool {
+        let saved = wireGuardDevices.setDNS(servers)
+        if !saved { append("WireGuard: the DNS servers couldn't be saved") }
+        publishSetup()
+        return saved
     }
 
     private func wireGuardPeersChanged() {
