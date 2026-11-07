@@ -73,3 +73,14 @@
 "Flux is sharing. No device is using it yet." = "Flux가 공유 중입니다. 아직 사용하는 기기는 없습니다.";
 "Flux is sharing with 1 device." = "Flux가 기기 1대와 공유 중입니다.";
 "Flux is sharing with %lld devices." = "Flux가 기기 %lld대와 공유 중입니다.";
+
+/* A device's screen: set it up again */
+"Set up again" = "다시 설정";
+"Show QR code" = "QR 코드 보기";
+"Hide QR code" = "QR 코드 숨기기";
+"QR code for this device" = "이 기기용 QR 코드";
+"Scan it on this device to set it up again, after a DNS change say. Then delete its old tunnel in WireGuard. The code holds the device's key, so show it only to the device." = "DNS를 바꾼 뒤처럼 이 기기를 다시 설정할 때 기기에서 스캔하세요. 그다음 WireGuard에서 예전 터널을 삭제하세요. 이 코드에는 기기의 키가 들어 있으니 해당 기기에만 보여주세요.";
+
+/* The notification when Flux goes to sleep */
+"Flux is asleep" = "Flux가 잠들었습니다";
+"No device used the hotspot for 10 minutes, so Flux stopped to save battery. Open Flux or run Start Flux before you turn the hotspot on again." = "10분 동안 핫스팟을 쓰는 기기가 없어서 배터리를 아끼려고 멈췄습니다. 핫스팟을 다시 켜기 전에 Flux를 열거나 'Flux 시작'을 실행하세요.";
