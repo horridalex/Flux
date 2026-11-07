@@ -54,7 +54,9 @@ struct AppearanceView: View {
             } footer: {
                 Text("Automatic follows the iPhone's setting.")
             }
+            .listRowBackground(Brand.card)
         }
+        .pageList()
         .navigationTitle("Appearance")
         .navigationBarTitleDisplayMode(.inline)
     }

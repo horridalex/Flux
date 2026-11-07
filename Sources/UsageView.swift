@@ -32,6 +32,7 @@ struct UsageView: View {
             } header: {
                 Text("This month")
             }
+            .listRowBackground(Brand.card)
 
             Section {
                 Chart(days, id: \.day) { day in
@@ -55,6 +56,7 @@ struct UsageView: View {
             } header: {
                 Text("Last 30 days")
             }
+            .listRowBackground(Brand.card)
 
             Section {
                 Toggle("Monthly limit", isOn: $limitOn)
@@ -69,7 +71,9 @@ struct UsageView: View {
             } footer: {
                 Text("Flux sends a notification at 80 and at 100 percent of the limit, once each a month. It only counts what Flux shared, not what the iPhone used itself.")
             }
+            .listRowBackground(Brand.card)
         }
+        .pageList()
         .navigationTitle("Usage")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {

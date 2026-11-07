@@ -148,63 +148,62 @@ struct DeviceView: View {
     private var connected: Bool { model.wireGuardConnected.contains(peer.address) }
 
     var body: some View {
-        List {
-            Section {
-                ConnectedLabel(connected: connected)
-                    .accessibilityIdentifier("device.status")
-                if connected {
-                    SpeedRow(down: model.deviceSpeeds[peer.address]?.down ?? 0, up: model.deviceSpeeds[peer.address]?.up ?? 0)
-                        .accessibilityIdentifier("device.speeds")
-                }
-                UsageRow(title: "Used today", bytes: model.usageToday.devices[peer.id.uuidString] ?? Usage.Bytes())
-                    .accessibilityIdentifier("device.usage")
-            } footer: {
-                Text("A travel router's figures include every device behind it.")
-            }
-            Section {
-                if let code {
-                    if let qr = code.qr {
-                        Image(uiImage: qr)
-                            .interpolation(.none)
-                            .resizable()
-                            .scaledToFit()
-                            .padding(14)
-                            .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                            .frame(maxWidth: 240)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
-                            .accessibilityLabel("QR code for this device")
-                            .accessibilityIdentifier("device.qr")
+        ScrollView {
+            VStack(spacing: 12) {
+                Tile {
+                    ConnectedLabel(connected: connected)
+                        .font(.title3.weight(.heavy))
+                        .accessibilityIdentifier("device.status")
+                    if connected {
+                        SpeedRow(down: model.deviceSpeeds[peer.address]?.down ?? 0, up: model.deviceSpeeds[peer.address]?.up ?? 0)
+                            .accessibilityIdentifier("device.speeds")
                     }
-                    if let file = code.file {
-                        ShareLink(item: file) {
-                            Label("Share as a file, for a Mac or a router", systemImage: "square.and.arrow.up")
+                    UsageRow(title: "Used today", bytes: model.usageToday.devices[peer.id.uuidString] ?? Usage.Bytes())
+                        .accessibilityIdentifier("device.usage")
+                }
+
+                Tile(title: "Set up again", subtitle: "Show it only to this device") {
+                    if let code {
+                        if let qr = code.qr {
+                            Image(uiImage: qr)
+                                .interpolation(.none)
+                                .resizable()
+                                .scaledToFit()
+                                .padding(14)
+                                .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                .frame(maxWidth: 240)
+                                .frame(maxWidth: .infinity)
+                                .accessibilityLabel("QR code for this device")
+                                .accessibilityIdentifier("device.qr")
                         }
-                        .buttonStyle(ActionButtonStyle())
-                    }
-                    Button("Hide QR code") { self.code = nil }
+                        Steps(steps: ["Scan it on this device", "Delete the old tunnel in WireGuard"])
+                        if let file = code.file {
+                            ShareLink(item: file) {
+                                Label("Share as a file, for a Mac or a router", systemImage: "square.and.arrow.up")
+                            }
+                            .buttonStyle(ActionButtonStyle(fullWidth: true))
+                        }
+                        Button("Hide QR code") { self.code = nil }
+                            .buttonStyle(ViewButtonStyle())
+                    } else {
+                        Button {
+                            showCode()
+                        } label: {
+                            Label("Show QR code", systemImage: "qrcode")
+                        }
                         .buttonStyle(ViewButtonStyle())
-                } else {
-                    Button {
-                        showCode()
-                    } label: {
-                        Label("Show QR code", systemImage: "qrcode")
+                        .accessibilityIdentifier("device.showQR")
                     }
-                    .buttonStyle(ViewButtonStyle())
-                    .accessibilityIdentifier("device.showQR")
                 }
-            } header: {
-                Text("Set up again")
-            } footer: {
-                Text("Scan it on this device to set it up again, after a DNS change say. Then delete its old tunnel in WireGuard. The code holds the device's key, so show it only to the device.")
-            }
-            Section {
-                Button("Remove device", role: .destructive) { confirmRemove = true }
+
+                Button("Remove device") { confirmRemove = true }
+                    .buttonStyle(DestructiveButtonStyle())
                     .accessibilityIdentifier("device.remove")
-            } footer: {
-                Text("It can't connect any more. Delete its tunnel in its WireGuard app too.")
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
         }
+        .background(Brand.page)
         .navigationTitle(Binding(get: { current.name }, set: { model.renameWireGuardDevice(peer.id, to: $0) }))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarRole(.editor)
@@ -333,6 +332,7 @@ struct DNSView: View {
             } footer: {
                 Text("Devices you add from now on use these. A device already added keeps its own: change DNS in its WireGuard tunnel, or remove it and add it again.")
             }
+            .listRowBackground(Brand.card)
 
             Section {
                 TextField("For example 192.168.8.1", text: $custom)
@@ -352,7 +352,9 @@ struct DNSView: View {
                         .foregroundStyle(.red)
                 }
             }
+            .listRowBackground(Brand.card)
         }
+        .pageList()
         .navigationTitle("DNS")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {

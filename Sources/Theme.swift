@@ -46,6 +46,13 @@ extension View {
     }
 }
 
+extension View {
+    /// A pushed screen's List, on the same page and cards as the main screen.
+    func pageList() -> some View {
+        scrollContentBackground(.hidden).background(Brand.page)
+    }
+}
+
 /// Solid blue, white text: a button that does something (share, apply).
 struct ActionButtonStyle: ButtonStyle {
     var fullWidth = false
