@@ -29,7 +29,7 @@ struct AddDeviceSection: View {
                     .accessibilityIdentifier("add.share")
                 }
             } header: {
-                Text(first ? "Add a device" : "Add another device")
+                Text(first ? LocalizedStringKey("Add a device") : LocalizedStringKey("Add another device"))
             } footer: {
                 Text("Install WireGuard on it, tap + > Create from QR code and scan this. Then edit the tunnel and turn On-Demand on for this iPhone's hotspot only. A travel router imports the file and turns its VPN on.")
                     .accessibilityIdentifier("add.steps")
@@ -105,7 +105,7 @@ struct ConnectedLabel: View {
 
     var body: some View {
         Label {
-            Text(connected ? "Connected" : "Not connected")
+            Text(connected ? LocalizedStringKey("Connected") : LocalizedStringKey("Not connected"))
                 .foregroundStyle(connected ? .primary : .secondary)
         } icon: {
             Image(systemName: connected ? "checkmark.circle.fill" : "circle.dashed")

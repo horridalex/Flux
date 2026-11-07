@@ -76,7 +76,7 @@ struct WireGuardSetup: Codable, Equatable {
     mutating func addPeer(name: String) -> Peer? {
         guard var peer = newPeer() else { return nil }
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        peer.name = trimmed.isEmpty ? freeName("Device") : trimmed
+        peer.name = trimmed.isEmpty ? freeName(Self.deviceName) : trimmed
         peers.append(peer)
         return peer
     }
@@ -90,7 +90,7 @@ struct WireGuardSetup: Codable, Equatable {
     /// a new one is ready for the next device. False when `address` isn't the ready device's.
     mutating func claimReady(address: String) -> Bool {
         guard var peer = ready, peer.address == address else { return false }
-        peer.name = freeName("Device")
+        peer.name = freeName(Self.deviceName)
         peers.append(peer)
         ready = nil
         prepareReady()
@@ -109,6 +109,9 @@ struct WireGuardSetup: Codable, Equatable {
     mutating func removePeer(_ id: Peer.ID) {
         peers.removeAll { $0.id == id }
     }
+
+    /// What a new device is called, in the iPhone's language.
+    private static var deviceName: String { String(localized: "Device") }
 
     /// "Device", then "Device 2", "Device 3", skipping names already taken.
     private func freeName(_ base: String) -> String {

@@ -185,8 +185,8 @@ final class Model: ObservableObject {
         }
         if let error = wireGuardDevices.loadError {
             wireGuardFailed(wireGuardDevices.needsReset
-                ? "Its saved keys can't be read. Start over with new keys to use it."
-                : "Its keys can't be read yet. Unlock this iPhone once.", error)
+                ? String(localized: "Its saved keys can't be read. Start over with new keys to use it.")
+                : String(localized: "Its keys can't be read yet. Unlock this iPhone once."), error)
             return
         }
         do {
@@ -194,7 +194,7 @@ final class Model: ObservableObject {
             wireGuardProblem = nil
             append("WireGuard on \(hotspot):\(WireGuardSetup.port), \(wireGuardPeers.count) devices")
         } catch {
-            wireGuardFailed("It couldn't start: \(error)", error)
+            wireGuardFailed(String(localized: "It couldn't start: \(String(describing: error))"), error)
         }
     }
 

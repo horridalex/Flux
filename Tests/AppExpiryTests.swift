@@ -38,18 +38,18 @@ final class AppExpiryTests: XCTestCase {
 
     func testTheWarningSaysWhenInDays() {
         XCTAssertEqual(AppExpiry.warning(expires: at(26), now: at(23, 12), calendar: utc),
-                       "Tether stops opening in 3 days. Install it again from Xcode.")
+                       "Tether stops opening in 3 days. Install it again before then.")
         XCTAssertEqual(AppExpiry.warning(expires: at(26, 9), now: at(24, 20), calendar: utc),
-                       "Tether stops opening in 2 days. Install it again from Xcode.", "counted in calendar days")
+                       "Tether stops opening in 2 days. Install it again before then.", "counted in calendar days")
         XCTAssertEqual(AppExpiry.warning(expires: at(26, 9), now: at(25, 22), calendar: utc),
-                       "Tether stops opening tomorrow. Install it again from Xcode.")
+                       "Tether stops opening tomorrow. Install it again before then.")
         XCTAssertEqual(AppExpiry.warning(expires: at(26, 20), now: at(26, 8), calendar: utc),
-                       "Tether stops opening today. Install it again from Xcode.")
+                       "Tether stops opening today. Install it again before then.")
     }
 
     /// Still running after the moment it expired: it won't open again once closed.
     func testPastTheDateItSaysToday() {
         XCTAssertEqual(AppExpiry.warning(expires: at(26, 8), now: at(26, 9), calendar: utc),
-                       "Tether stops opening today. Install it again from Xcode.")
+                       "Tether stops opening today. Install it again before then.")
     }
 }

@@ -1,0 +1,2 @@
+/* English is the text in the code itself. This file is here so iOS knows the app speaks
+   English too, and doesn't show Korean to someone whose iPhone is in English. */

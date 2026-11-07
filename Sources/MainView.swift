@@ -158,10 +158,15 @@ struct StatusCard: View {
 
     private var headline: String {
         switch model.wireGuardConnected.count {
-        case 0: return "Hotspot is on, no device is using Tether yet"
-        case 1: return "Sharing with 1 device"
-        case let n: return "Sharing with \(n) devices"
+        case 0: return String(localized: "Hotspot is on, no device is using Tether yet")
+        case 1: return String(localized: "Sharing with 1 device")
+        case let n: return String(localized: "Sharing with \(n) devices")
         }
+    }
+
+    private var title: LocalizedStringKey {
+        if sharing { return "Sharing" }
+        return model.running ? "Tether can't share yet" : "Turn on Personal Hotspot"
     }
 
     var body: some View {
@@ -177,7 +182,7 @@ struct StatusCard: View {
                         .offset(x: 6, y: 4)
                 }
                 .accessibilityHidden(true)
-            Text(sharing ? "Sharing" : model.running ? "Tether can't share yet" : "Turn on Personal Hotspot")
+            Text(title)
                 .font(.title.bold())
                 .multilineTextAlignment(.center)
                 .accessibilityIdentifier("status.title")

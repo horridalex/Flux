@@ -1,0 +1,5 @@
+/* What to say to Siri in Korean. ${applicationName} is the app's name. */
+"Start ${applicationName}" = "${applicationName} 시작";
+"Share internet with ${applicationName}" = "${applicationName}로 인터넷 공유";
+"Is ${applicationName} sharing" = "${applicationName} 공유 중이야";
+"${applicationName} status" = "${applicationName} 상태";
