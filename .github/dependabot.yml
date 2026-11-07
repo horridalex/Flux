@@ -1,0 +1,24 @@
+# Opens pull requests when the Go modules (wireguard-go, gVisor, golang.org/x) or the pinned
+# GitHub Actions have a new version. A security fix in one of them gets its own pull request at
+# once; the rest come once a week, grouped, so there aren't many to merge. CI runs on each.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /WireGuard
+    schedule:
+      interval: weekly
+    groups:
+      go-modules:
+        patterns: ["*"]
+    commit-message:
+      prefix: "WireGuard"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "CI"
