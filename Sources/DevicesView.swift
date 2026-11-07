@@ -10,28 +10,31 @@ struct AddDeviceSection: View {
     var body: some View {
         if let ready = model.wireGuardReady {
             let code = ReadyCode.for(config: model.wireGuardConfig(for: ready))
-            Section {
+            Tile(title: first ? LocalizedStringKey("Add a device") : LocalizedStringKey("Add another device")) {
                 if let qr = code.qr {
+                    // Black on white whatever the theme, with a quiet zone, so any camera reads it.
                     Image(uiImage: qr)
                         .interpolation(.none)
                         .resizable()
                         .scaledToFit()
+                        .padding(14)
+                        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                         .frame(maxWidth: 240)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
                         .accessibilityLabel("QR code for the next device")
                         .accessibilityIdentifier("add.qr")
                 }
                 if let file = code.file {
                     ShareLink(item: file) {
                         Label("Share as a file, for a Mac or a router", systemImage: "square.and.arrow.up")
+                            .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(.bordered)
                     .accessibilityIdentifier("add.share")
                 }
-            } header: {
-                Text(first ? LocalizedStringKey("Add a device") : LocalizedStringKey("Add another device"))
-            } footer: {
                 Text("Install WireGuard on it, tap + > Create from QR code and scan this. Then edit the tunnel and turn On-Demand on for this iPhone's hotspot only. A travel router imports the file and turns its VPN on.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
                     .accessibilityIdentifier("add.steps")
             }
         }
@@ -44,15 +47,14 @@ struct WireGuardProblemSection: View {
 
     var body: some View {
         if let problem = model.wireGuardProblem {
-            Section {
+            Tile(title: "WireGuard isn't running", tint: .orange) {
                 Label(problem, systemImage: "exclamationmark.triangle")
                     .accessibilityIdentifier("wireguard.problem")
                 if model.wireGuardNeedsReset {
                     Button("Start over with new keys", role: .destructive) { model.resetWireGuard() }
+                        .buttonStyle(.bordered)
                         .accessibilityIdentifier("wireguard.reset")
                 }
-            } header: {
-                Text("WireGuard isn't running")
             }
         }
     }
@@ -86,6 +88,7 @@ struct DeviceView: View {
                 Text("It can't connect any more. Delete its tunnel in its WireGuard app too.")
             }
         }
+        .auroraList(flowing: model.sharing)
         .navigationTitle(Binding(get: { current.name }, set: { model.renameWireGuardDevice(peer.id, to: $0) }))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarRole(.editor)
@@ -222,6 +225,7 @@ struct DNSView: View {
                 }
             }
         }
+        .auroraList(flowing: model.sharing)
         .navigationTitle("DNS")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {

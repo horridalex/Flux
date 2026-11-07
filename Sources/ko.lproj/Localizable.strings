@@ -15,6 +15,7 @@
 /* Main screen: speeds and usage */
 "Download %@, upload %@" = "다운로드 %@, 업로드 %@";
 "Used today" = "오늘 사용량";
+"Now" = "현재 속도";
 "%@, download %@, upload %@" = "%@, 다운로드 %@, 업로드 %@";
 
 /* Main screen: devices and the QR code */

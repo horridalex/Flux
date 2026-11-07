@@ -67,7 +67,11 @@ class FluxUITestCase: XCTestCase {
     // MARK: scrolling
 
     /// The main screen's List, or the List of whatever screen is showing.
-    var list: XCUIElement { app.collectionViews.firstMatch }
+    /// What scrolls: a List on the pushed screens, the main screen's ScrollView of tiles.
+    var list: XCUIElement {
+        let collection = app.collectionViews.firstMatch
+        return collection.exists ? collection : app.scrollViews.firstMatch
+    }
 
     /// Scrolls until the element is fully on screen, clear of the navigation bar and the home indicator, so a tap lands on it.
     /// A List only keeps rows near the screen, so an element can exist and still be off screen: `isHittable` is not enough.

@@ -6,8 +6,6 @@ Share your iPhone's internet with your iPad, Mac or travel router, even when you
 
 <img src="Sources/Assets.xcassets/AppIcon.appiconset/icon-1024.png" width="96" alt="Flux icon">
 
-<img src="docs/sharing.png" width="260" alt="Flux sharing with an iPad, with the speed and the list of devices"> <img src="docs/add-device.png" width="260" alt="Flux with the hotspot on and a QR code for the first device">
-
 ## Why this works
 
 Carriers can tell when traffic comes from a device that's connected to your hotspot, and some plans block it or slow it to a crawl. Traffic that comes from the phone itself is fine.
@@ -102,6 +100,7 @@ WireGuard/                   the WireGuard server in Go: wireguard-go plus a gVi
 scripts/build-wireguard.sh   builds WireGuard/ into FluxWG.xcframework (xcodegen runs it)
 Sources/Model.swift          finds the hotspot, starts the server, samples traffic, feeds the screens
 Sources/MainView.swift       the main screen; DevicesView.swift has the QR code and the device screen
+Sources/Theme.swift          the aurora background and the glass tiles
 Sources/KeepAlive.swift      silent audio to stay alive in the background
 Sources/Shortcuts.swift      the Start Flux and Is Flux Sharing? actions for Shortcuts and Siri
 Sources/Usage.swift          today's usage, in all and by device
@@ -109,7 +108,7 @@ Sources/ko.lproj/            the Korean text; the English is in the code
 Sources/DemoMode.swift       fake app states for the UI tests (Debug builds only)
 Tests/                       unit tests, run on the Mac
 UITests/                     UI tests for every screen, run on the iOS Simulator
-scripts/make-icon.swift      draws the app icon
+scripts/make-icon.py         draws the app icon (Python with Pillow)
 ```
 
 The file map at the top of Model.swift lists every source file.
