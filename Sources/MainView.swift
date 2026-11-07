@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MainView: View {
     @ObservedObject private var model = Model.shared
+    @AppStorage(Appearance.key) private var appearance: Appearance = .automatic
 
     var body: some View {
         NavigationStack {
@@ -72,16 +73,28 @@ struct MainView: View {
                     AddDeviceSection(model: model, first: model.wireGuardPeers.isEmpty)
 
                     Tile(title: "Settings") {
-                        NavigationLink { DNSView(model: model) } label: {
-                            TileRow {
-                                Text("DNS")
-                                Spacer()
-                                Text(verbatim: model.wireGuardDNS)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
+                        VStack(spacing: 0) {
+                            NavigationLink { AppearanceView() } label: {
+                                TileRow {
+                                    Text("Appearance")
+                                    Spacer()
+                                    Text(appearance.title)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
+                            .accessibilityIdentifier("settings.appearance")
+                            Divider()
+                            NavigationLink { DNSView(model: model) } label: {
+                                TileRow {
+                                    Text("DNS")
+                                    Spacer()
+                                    Text(verbatim: model.wireGuardDNS)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                            }
+                            .accessibilityIdentifier("settings.dns")
                         }
-                        .accessibilityIdentifier("settings.dns")
                     }
                 }
                 .padding(16)

@@ -6,6 +6,7 @@
 //   Format.swift        bytes and speeds as text
 //   MainView.swift      MainView (the main screen, a column of cards), StatusCard, and the speeds
 //   Theme.swift         the cards and the brand colours
+//   Appearance.swift    light, dark or automatic, under Settings
 //   DevicesView.swift   the QR code for the next device, and a device's own screen
 //   AppExpiry.swift     when a sideloaded build stops opening, and the warning before it
 //   DemoMode.swift      fake app state for the UI tests, Debug builds only

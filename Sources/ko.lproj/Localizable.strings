@@ -109,3 +109,10 @@
 /* The speed card's two sides */
 "Download" = "다운로드";
 "Upload" = "업로드";
+
+/* Settings > Appearance */
+"Appearance" = "화면 모드";
+"Automatic" = "자동";
+"Light" = "라이트";
+"Dark" = "다크";
+"Automatic follows the iPhone's setting." = "자동은 iPhone 설정을 따릅니다.";
