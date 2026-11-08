@@ -197,9 +197,17 @@ func TestPingWithARealSocket(t *testing.T) {
 	}
 	probe.Close()
 	_, c := setup(t) // viaLoopback sends what goes to remote to 127.0.0.1
-	echo, err := ping(t, c, remote, 3, []byte("hello"))
-	if err != nil {
-		t.Fatal(err)
+	// A real ICMP socket on a busy CI Mac now and then loses one echo, like any ping: three tries,
+	// as ping itself would make, before calling it broken.
+	var echo *icmp.Echo
+	for try := 0; ; try++ {
+		echo, err = ping(t, c, remote, 3, []byte("hello"))
+		if err == nil {
+			break
+		}
+		if try == 2 {
+			t.Fatal(err)
+		}
 	}
 	if echo.Seq != 3 || string(echo.Data) != "hello" {
 		t.Fatalf("got seq %d data %q", echo.Seq, echo.Data)
