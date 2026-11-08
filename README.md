@@ -121,7 +121,7 @@ Sources/ko.lproj/            한국어 문구; 영어는 코드에 있음
 Sources/DemoMode.swift       UI 테스트용 가짜 앱 상태 (Debug 빌드에서만)
 Tests/                       Mac에서 도는 유닛 테스트
 UITests/                     iOS 시뮬레이터에서 도는 화면별 UI 테스트
-scripts/make-icon.py         앱 아이콘(파란 클레이 물결)을 그림 (Python, Pillow)
+scripts/make-icon.py         앱 아이콘(파란 바탕에 흰 세 줄 물결)을 그림 (Python, Pillow)
 ```
 
 모든 소스 파일 목록은 Model.swift 맨 위에 있습니다.

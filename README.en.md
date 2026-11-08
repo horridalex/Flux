@@ -121,7 +121,7 @@ Sources/ko.lproj/            the Korean text; the English is in the code
 Sources/DemoMode.swift       fake app states for the UI tests (Debug builds only)
 Tests/                       unit tests, run on the Mac
 UITests/                     UI tests for every screen, run on the iOS Simulator
-scripts/make-icon.py         draws the app icon, a blue clay wave (Python with Pillow)
+scripts/make-icon.py         draws the app icon, three white waves on blue (Python with Pillow)
 ```
 
 The file map at the top of Model.swift lists every source file.
