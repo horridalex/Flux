@@ -9,9 +9,9 @@ final class SettingsTests: FluxUITestCase {
         XCTAssertTrue(element("autoStop.10").isSelected, "10 minutes until a choice is made")
         element("autoStop.30").tap()
         XCTAssertTrue(element("autoStop.30").isSelected)
-        XCTAssertTrue(app.staticTexts["With no hotspot for this long, Flux stops to save battery."].exists)
+        XCTAssertTrue(app.staticTexts["After this long without the hotspot, open Flux to share again."].exists)
         element("autoStop.0").tap()
-        XCTAssertTrue(app.staticTexts["Never stopping uses more battery."].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Always shares when the hotspot comes on, but uses more battery."].waitForExistence(timeout: 5))
         goBack(to: "Flux")
         XCTAssertTrue(reveal(element("settings.autoStop")).label.contains("Never"))
         // Back to the default for the other tests.

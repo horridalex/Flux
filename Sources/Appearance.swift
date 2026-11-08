@@ -98,7 +98,7 @@ struct AutoStopView: View {
                     .accessibilityIdentifier("autoStop.\(choice.rawValue)")
                 }
             } footer: {
-                Text(autoStop == .never ? "Never stopping uses more battery." : "With no hotspot for this long, Flux stops to save battery.")
+                Text(autoStop == .never ? "Always shares when the hotspot comes on, but uses more battery." : "After this long without the hotspot, open Flux to share again.")
             }
             .listRowBackground(Brand.card)
         }

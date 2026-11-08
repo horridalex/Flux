@@ -169,5 +169,5 @@
 "10 minutes" = "10분";
 "30 minutes" = "30분";
 "Never" = "멈추지 않음";
-"With no hotspot for this long, Flux stops to save battery." = "이 시간 동안 핫스팟이 없으면 배터리를 아끼려고 멈춰요.";
-"Never stopping uses more battery." = "멈추지 않으면 배터리를 더 써요.";
+"After this long without the hotspot, open Flux to share again." = "이 시간이 지나면 Flux를 다시 열어야 켜져요";
+"Always shares when the hotspot comes on, but uses more battery." = "언제든 저절로 켜지지만 배터리를 더 써요";
