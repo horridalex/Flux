@@ -15,9 +15,7 @@
 //   WireGuardServer.swift  runs the WireGuard server (WireGuard/, Go)
 //   KeepAlive.swift, KeepAlivePolicy.swift  the silent sound that keeps Flux running, and Auto-stop
 //   LiveActivityController.swift  ends a Live Activity left by Flux 1.4.1 and before
-//   Shared/, Widgets/   the Control Center button, in the widget extension
 //   Notices.swift       the notifications: going to sleep, devices connecting, the monthly limit
-//   UsageView.swift     the last 30 days, this month and the monthly limit
 
 import OSLog
 import SwiftUI
@@ -53,20 +51,11 @@ final class Model: ObservableObject {
     @Published var wireGuardConnected: Set<String> = []
     /// How much was shared today, in all and by device id. Kept across launches.
     @Published var usageToday: Usage
-    /// The last 31 days as last saved, today's included, oldest first. See `usageToday` for today
-    /// as it is now.
-    @Published var usageHistory: [Usage]
-    /// The monthly data limit, warned about at 80 % and 100 %. Zero bytes for none.
-    @Published private(set) var usageLimit: UsageLimit
     /// Each connected device's speed now, by tunnel address. Sampled with the rest while on screen.
     @Published var deviceSpeeds: [String: DeviceSpeed] = [:]
 
-    /// This calendar month so far, today as it is now.
-    var usageThisMonth: Usage.Bytes { Usage.monthTotal(usageHistory, today: usageToday) }
-
     private var usageMeter: UsageMeter
     private let usageStore = UsageStore()
-    private let limitStore = UsageLimitStore()
     /// Each device's counters at the last sample, by tunnel address, for `deviceSpeeds`.
     private var lastDeviceSample: [String: TrafficTotals] = [:]
     /// When `usageToday` was last saved. It's saved at most every 10 seconds, and when Flux
@@ -99,16 +88,10 @@ final class Model: ObservableObject {
         self.wireGuardDNS = wireGuardDevices.setup.dnsServers
         #if DEBUG
         let usage = demo == nil ? UsageStore().load() : Usage(day: Usage.day(of: Date()))
-        let history = demo == nil ? UsageStore().history() : []
-        let limit = demo == nil ? UsageLimitStore().limit : UsageLimit(bytes: 0)
         #else
         let usage = UsageStore().load()
-        let history = UsageStore().history()
-        let limit = UsageLimitStore().limit
         #endif
         self.usageToday = usage
-        self.usageHistory = history
-        self.usageLimit = limit
         self.usageMeter = UsageMeter(today: usage)
         #if DEBUG
         if let demo {
@@ -187,7 +170,6 @@ final class Model: ObservableObject {
         downSpeed = 0
         upSpeed = 0
         running = true
-        if sceneActive { SleepNotice.askOnce() } // see SleepNotice for why now
     }
 
     /// Plays the silent sound while the hotspot is on, and for a while after it goes, see
@@ -201,7 +183,6 @@ final class Model: ObservableObject {
         if plays { keepAlive.start() } else if keepAlive.playing {
             append("no hotspot for \(autoStop.rawValue) minutes, letting iOS suspend Flux until it's opened")
             keepAlive.stop()
-            SleepNotice.post(minutes: autoStop.rawValue)
         }
     }
 
@@ -242,7 +223,6 @@ final class Model: ObservableObject {
         if demo != nil { return true }
         #endif
         if waitingSince != nil { waitingSince = Date() }
-        SleepNotice.clear()
         syncWithHotspot()
         return keepAlive.sounding
     }
@@ -325,7 +305,6 @@ final class Model: ObservableObject {
             if upSpeed != 0 { upSpeed = 0 }
             if !deviceSpeeds.isEmpty { deviceSpeeds = [:] }
             if !wireGuardConnected.isEmpty { wireGuardConnected = [] }
-            noticedConnected = nil
             return
         }
         let snap = wireGuard.snapshot()
@@ -334,7 +313,6 @@ final class Model: ObservableObject {
         if connected != wireGuardConnected { wireGuardConnected = connected }
         recordUsage(snap, now: now)
         claimReady(connected: connected)
-        noticeConnections(connected)
         let devices = wireGuard.deviceTotals // from the snapshot above too
         defer { lastDeviceSample = devices }
         guard let last = lastSample else { return } // the first sample has nothing to compare with
@@ -360,31 +338,13 @@ final class Model: ObservableObject {
     }
 
     /// The watcher's check in the background, where the sampler doesn't run, so a device that
-    /// connects then is listed too and the next one gets a new code.
+    /// connects then is listed too and the next one gets a new code. Only that: the data used is
+    /// counted when Flux is back on screen or the hotspot goes (the server's counters keep it), so
+    /// the background stays as light as it can.
     private func claimReadyInBackground() {
-        guard running else {
-            noticedConnected = nil
-            return
-        }
-        let now = Date()
-        let snap = wireGuard.snapshot() // refreshes connectedAddresses
-        recordUsage(snap, now: now)
+        guard running else { return }
+        _ = wireGuard.snapshot() // refreshes connectedAddresses
         claimReady(connected: wireGuard.connectedAddresses)
-        noticeConnections(wireGuard.connectedAddresses)
-    }
-
-    /// The connected addresses at the last reading, for `ConnectionNotice`. Nil until the first
-    /// reading while the hotspot is on, so starting to share doesn't announce every device.
-    private var noticedConnected: Set<String>?
-
-    /// Off the screen, says which devices connected or left since the last reading. On screen the
-    /// list shows it. Called after `claimReady`, so a device that just used the QR code has its name.
-    private func noticeConnections(_ connected: Set<String>) {
-        defer { noticedConnected = connected }
-        guard let before = noticedConnected, before != connected, !sceneActive else { return }
-        for peer in wireGuardPeers where before.contains(peer.address) != connected.contains(peer.address) {
-            ConnectionNotice.post(device: peer.id.uuidString, name: peer.name, connected: connected.contains(peer.address))
-        }
     }
 
     /// Adds what the devices used since the last reading to today's figures. `snap` is a
@@ -406,28 +366,8 @@ final class Model: ObservableObject {
         usageToday = today
         if saving || now.timeIntervalSince(usageSavedAt) >= 10 {
             usageStore.save(today, now: now)
-            usageHistory = usageStore.history(now: now)
             usageSavedAt = now
         }
-        warnAboutTheLimit()
-    }
-
-    /// At 80 % and 100 % of the monthly limit, once each a month.
-    private func warnAboutTheLimit() {
-        let month = usageToday.month
-        let used = usageThisMonth.total
-        guard let level = usageLimit.warning(used: used, given: limitStore.given(in: month)) else { return }
-        limitStore.setGiven(level, in: month)
-        append("monthly limit: \(level) % reached")
-        UsageNotice.post(level: level, used: used, limit: usageLimit.bytes)
-    }
-
-    /// A monthly limit in bytes, 0 for none. Warnings already given this month stay given.
-    func setUsageLimit(bytes: UInt64) {
-        usageLimit = UsageLimit(bytes: bytes)
-        limitStore.limit = usageLimit
-        if bytes > 0 { SleepNotice.askOnce() } // the warnings are notifications too
-        warnAboutTheLimit()
     }
 
     /// The server's counters never go backwards. The guard is only a safety net.

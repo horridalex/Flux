@@ -106,39 +106,6 @@ final class UsageTests: XCTestCase {
         store.save(today, now: date(7, 13), calendar: calendar)
         XCTAssertNil(defaults.data(forKey: "usage.today"), "moved over once")
     }
-
-    func testTheMonthAddsUpItsOwnDaysAndTodayAsItIsNow() {
-        let days = [
-            Usage(day: "2026-10-31", all: Usage.Bytes(up: 100, down: 100)),
-            Usage(day: "2026-11-01", all: Usage.Bytes(up: 1, down: 10)),
-            Usage(day: "2026-11-06", all: Usage.Bytes(up: 2, down: 20)),
-            Usage(day: "2026-11-07", all: Usage.Bytes(up: 1, down: 1)), // saved a while ago
-        ]
-        let today = Usage(day: "2026-11-07", all: Usage.Bytes(up: 4, down: 40))
-        XCTAssertEqual(Usage.monthTotal(days, today: today), Usage.Bytes(up: 7, down: 70))
-    }
-
-    func testTheLimitWarnsAt80AndAt100OnceEach() {
-        let limit = UsageLimit(bytes: 1000)
-        XCTAssertNil(limit.warning(used: 799, given: 0))
-        XCTAssertEqual(limit.warning(used: 800, given: 0), 80)
-        XCTAssertNil(limit.warning(used: 900, given: 80))
-        XCTAssertEqual(limit.warning(used: 1000, given: 80), 100)
-        XCTAssertEqual(limit.warning(used: 1500, given: 0), 100, "straight past 80 says 100 only")
-        XCTAssertNil(limit.warning(used: 2000, given: 100))
-        XCTAssertNil(UsageLimit(bytes: 0).warning(used: 2000, given: 0), "no limit, no warning")
-    }
-
-    func testTheWarningsGivenStartAgainEachMonth() {
-        let store = UsageLimitStore(defaults: freshDefaults("UsageTests.limit"))
-        XCTAssertEqual(store.limit, UsageLimit(bytes: 0))
-        store.limit = UsageLimit(bytes: 50_000_000_000)
-        XCTAssertEqual(store.limit.bytes, 50_000_000_000)
-        store.setGiven(80, in: "2026-11")
-        XCTAssertEqual(store.given(in: "2026-11"), 80)
-        XCTAssertEqual(store.given(in: "2026-12"), 0)
-    }
-
     func testTheDayIsTheLocalOne() {
         XCTAssertEqual(Usage.day(of: date(7, 0), calendar: calendar), "2026-11-07")
         XCTAssertEqual(Usage.day(of: date(7, 23), calendar: calendar), "2026-11-07")

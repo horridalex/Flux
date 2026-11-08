@@ -13,3 +13,13 @@ enum LiveActivityController {
         }
     }
 }
+
+/// The old Live Activity's type, as 1.4.1 had it, so its leftovers can be found. Nothing shows it.
+struct FluxActivityAttributes: ActivityAttributes {
+    struct ContentState: Codable, Hashable {
+        var devices: Int
+        var down: Double
+        var up: Double
+        var today: UInt64
+    }
+}

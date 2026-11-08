@@ -75,7 +75,7 @@ extension AutoStop {
 
 /// Settings > Auto-stop: how long Flux waits with no hotspot before it stops, see `AutoStop`.
 struct AutoStopView: View {
-    @AppStorage(AutoStop.key) private var autoStop: AutoStop = .ten
+    @AppStorage(AutoStop.key) private var autoStop: AutoStop = .five
 
     var body: some View {
         List {

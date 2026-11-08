@@ -22,11 +22,10 @@ targets:
   Flux:
     type: application
     platform: iOS
-    sources: [Sources, Shared]
+    sources: [Sources]
     dependencies:
       - framework: WireGuard/build/FluxWG.xcframework
         embed: false # a static library, linked into the app
-      - target: FluxWidgets # embedded in the app's PlugIns
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
@@ -55,33 +54,6 @@ targets:
         UIBackgroundModes: [audio]
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-  # The Control Center button. iOS 18 and later, for the control; the app
-  # itself still runs on iOS 17, without them.
-  FluxWidgets:
-    type: app-extension
-    platform: iOS
-    deploymentTarget: "18.0"
-    sources:
-      - Widgets
-      - Shared
-      - Sources/Format.swift
-      - Sources/Theme.swift
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).widgets
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_FILE: Widgets/Info.plist
-        SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) WIDGET_EXTENSION
-        SKIP_INSTALL: YES
-    # The same build number as the app, which iOS expects of an extension.
-    postBuildScripts:
-      - name: Build number from git
-        basedOnDependencyAnalysis: false
-        inputFiles:
-          - $(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)
-        script: |
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(git -C "$SRCROOT" rev-list --count HEAD)" \
-            "$TARGET_BUILD_DIR/$INFOPLIST_PATH"
   FluxUITests:
     type: bundle.ui-testing
     platform: iOS
