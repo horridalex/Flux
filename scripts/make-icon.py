@@ -5,7 +5,6 @@ Run: python3 scripts/make-icon.py Sources/Assets.xcassets/AppIcon.appiconset/ico
 Needs Pillow (pip install pillow). It draws at twice the size and scales down, for smooth edges.
 """
 import math
-import os
 import sys
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
@@ -69,15 +68,8 @@ def main(out):
     gloss = stroke([(x, y - S * 0.045) for x, y in points[60:140]], S * 0.03)
     img = paint(img, (255, 255, 255), gloss.filter(ImageFilter.GaussianBlur(S * 0.01)).point(lambda v: int(v * 0.7)))
 
-    img = img.convert("RGB").resize((SIZE, SIZE), Image.LANCZOS)
-    img.save(out, "PNG")  # no alpha, as iOS wants
+    img.convert("RGB").resize((SIZE, SIZE), Image.LANCZOS).save(out, "PNG")  # no alpha, as iOS wants
     print("wrote", out)
-    # The small copy the widget shows by its name (Widgets/FluxWidgets.swift), 22 pt.
-    widget = os.path.join(os.path.dirname(__file__), "..", "Widgets", "Assets.xcassets", "FluxIcon.imageset")
-    for scale in (2, 3):
-        path = os.path.join(widget, f"icon@{scale}x.png")
-        img.resize((22 * scale, 22 * scale), Image.LANCZOS).save(path, "PNG")
-        print("wrote", path)
 
 
 if __name__ == "__main__":
