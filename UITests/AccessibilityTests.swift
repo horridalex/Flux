@@ -16,7 +16,7 @@ final class AccessibilityTests: FluxUITestCase {
 
     func testLowerPartOfTheMainScreenPassesTheStructuralAudit() throws {
         launch(.sharing)
-        reveal(element("add.steps"))
+        reveal(element("settings.dns"))
         try audit(types: structuralAudit)
     }
 
@@ -80,8 +80,17 @@ final class AccessibilityTests: FluxUITestCase {
 
     // MARK: devices and the QR code
 
-    func testQRCodeSectionPassesTheStructuralAudit() throws {
+    func testAddDeviceSheetPassesTheAccessibilityAudit() throws {
         launch(.noDevices)
+        reveal(element("add.showQR")).tap()
+        XCTAssertTrue(element("add.qr").waitForExistence(timeout: 5))
+        try audit()
+    }
+
+    func testLowerPartOfTheAddDeviceSheetPassesTheStructuralAudit() throws {
+        launch(.noDevices)
+        reveal(element("add.showQR")).tap()
+        XCTAssertTrue(element("add.qr").waitForExistence(timeout: 5))
         reveal(element("add.share"))
         try audit(types: structuralAudit)
     }
@@ -111,7 +120,8 @@ final class AccessibilityTests: FluxUITestCase {
         launch(.sharing, arguments: accessibilityXL)
         XCTAssertTrue(reveal(element("device.iPad"), maxSwipes: 30).isHittable)
         XCTAssertTrue(reveal(element("device.MacBook"), maxSwipes: 30).isHittable)
-        XCTAssertTrue(reveal(element("add.qr"), maxSwipes: 30).isHittable)
+        reveal(element("add.showQR"), maxSwipes: 30).tap()
+        XCTAssertTrue(element("add.qr").waitForExistence(timeout: 5))
         XCTAssertTrue(reveal(element("add.share"), maxSwipes: 30).isHittable)
         XCTAssertTrue(reveal(element("add.steps"), maxSwipes: 30).exists)
     }

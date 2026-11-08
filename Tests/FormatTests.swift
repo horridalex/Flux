@@ -7,6 +7,8 @@ final class FormatTests: XCTestCase {
         XCTAssertEqual(Format.speed(999), "999 bit/s")
         XCTAssertEqual(Format.speed(400_000), "400 kbit/s")
         XCTAssertEqual(Format.speed(3_200_000), "3.2 Mbit/s")
+        XCTAssertTrue(Format.speedParts(3_200_000) == ("3.2", "Mbit/s"))
+        XCTAssertTrue(Format.speedParts(400_000) == ("400", "kbit/s"))
     }
 
     func testBytesAreReadable() {

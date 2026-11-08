@@ -20,7 +20,7 @@ struct UsageView: View {
                         .font(.largeTitle.weight(.bold).monospacedDigit())
                     if model.usageLimit.bytes > 0 {
                         ProgressView(value: min(1, Double(model.usageThisMonth.total) / Double(model.usageLimit.bytes)))
-                            .tint(model.usageThisMonth.total >= model.usageLimit.bytes ? .orange : Brand.blue)
+                            .tint(model.usageThisMonth.total >= model.usageLimit.bytes ? .orange : Brand.action)
                         Text("of \(Format.bytes(model.usageLimit.bytes)) this month")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
@@ -32,12 +32,13 @@ struct UsageView: View {
             } header: {
                 Text("This month")
             }
+            .listRowBackground(Brand.card)
 
             Section {
                 Chart(days, id: \.day) { day in
                     BarMark(x: .value("Day", Self.date(of: day.day), unit: .day),
                             y: .value("Data", Double(day.all.total) / 1_000_000_000))
-                        .foregroundStyle(Brand.flow)
+                        .foregroundStyle(Brand.accent)
                         .cornerRadius(3)
                 }
                 .chartYAxisLabel("GB")
@@ -55,6 +56,7 @@ struct UsageView: View {
             } header: {
                 Text("Last 30 days")
             }
+            .listRowBackground(Brand.card)
 
             Section {
                 Toggle("Monthly limit", isOn: $limitOn)
@@ -69,8 +71,9 @@ struct UsageView: View {
             } footer: {
                 Text("Flux sends a notification at 80 and at 100 percent of the limit, once each a month. It only counts what Flux shared, not what the iPhone used itself.")
             }
+            .listRowBackground(Brand.card)
         }
-        .auroraList(flowing: model.sharing)
+        .pageList()
         .navigationTitle("Usage")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {

@@ -25,20 +25,28 @@ final class ScreenshotTests: FluxUITestCase {
 
     func testMainScreen() {
         for appearance in ["dark", "light"] {
-            launch(.sharing, arguments: ["-FluxAppearance", appearance])
+            launch(.sharing, arguments: ["-FluxAppearance", appearance], korean: true)
             settle()
             shoot("main-\(appearance)")
         }
     }
 
     func testWaitingAndTheQRCode() {
-        launch(.waiting, arguments: ["-FluxAppearance", "dark"])
+        launch(.waiting, arguments: ["-FluxAppearance", "dark"], korean: true)
         settle()
         shoot("waiting-dark")
     }
 
+    func testAddDevice() {
+        launch(.sharing, arguments: ["-FluxAppearance", "dark"], korean: true)
+        reveal(element("add.showQR")).tap()
+        XCTAssertTrue(element("add.qr").waitForExistence(timeout: 5))
+        settle()
+        shoot("add-dark")
+    }
+
     func testUsage() {
-        launch(.sharing, arguments: ["-FluxAppearance", "dark"])
+        launch(.sharing, arguments: ["-FluxAppearance", "dark"], korean: true)
         reveal(element("usage.today")).tap()
         XCTAssertTrue(element("usage.chart").waitForExistence(timeout: 5))
         settle()
@@ -46,7 +54,7 @@ final class ScreenshotTests: FluxUITestCase {
     }
 
     func testDevice() {
-        launch(.sharing, arguments: ["-FluxAppearance", "dark"])
+        launch(.sharing, arguments: ["-FluxAppearance", "dark"], korean: true)
         reveal(element("device.iPad")).tap()
         XCTAssertTrue(element("device.status").waitForExistence(timeout: 5))
         settle()

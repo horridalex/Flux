@@ -1,41 +1,107 @@
 import CoreImage.CIFilterBuiltins
 import SwiftUI
 
-/// The QR code for the next device, always on the main screen. It's the ready device's config: the
-/// first time something connects with it, that device is listed and a new code takes its place.
+/// Adding the next device: a row on the main screen that opens the ways to connect it, a QR code
+/// or a file. Both hold the ready device's config: the first time something connects with it, that
+/// device is listed and a new one takes its place.
 struct AddDeviceSection: View {
     @ObservedObject var model: Model
     let first: Bool
+    @State private var adding = false
 
     var body: some View {
-        if let ready = model.wireGuardReady {
-            let code = ReadyCode.for(config: model.wireGuardConfig(for: ready))
-            Tile(title: first ? LocalizedStringKey("Add a device") : LocalizedStringKey("Add another device")) {
-                if let qr = code.qr {
-                    // Black on white whatever the theme, with a quiet zone, so any camera reads it.
-                    Image(uiImage: qr)
-                        .interpolation(.none)
-                        .resizable()
-                        .scaledToFit()
-                        .padding(14)
-                        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        .frame(maxWidth: 240)
-                        .frame(maxWidth: .infinity)
-                        .accessibilityLabel("QR code for the next device")
-                        .accessibilityIdentifier("add.qr")
+        if model.wireGuardReady != nil {
+            Button { adding = true } label: {
+                HStack(spacing: 14) {
+                    IconTile(systemName: "plus", color: Brand.accent)
+                    Text(first ? LocalizedStringKey("Add a device") : LocalizedStringKey("Add another device"))
+                        .font(.body.weight(.bold))
+                        .lineLimit(1)
+                    Spacer(minLength: 8)
+                    Text("Connect")
+                        .font(.body.weight(.bold))
+                        .lineLimit(1)
+                        .fixedSize()
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 11)
+                        .foregroundStyle(Color.white)
+                        .background(Brand.action, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
-                if let file = code.file {
-                    ShareLink(item: file) {
-                        Label("Share as a file, for a Mac or a router", systemImage: "square.and.arrow.up")
-                            .frame(maxWidth: .infinity)
+                .padding(24)
+                .card()
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("add.showQR")
+            .sheet(isPresented: $adding) {
+                AddDeviceSheet(model: model, first: first)
+            }
+        }
+    }
+}
+
+/// The two ways to connect the next device: its QR code, for an iPad or an iPhone, and its file, for a
+/// Mac or a router.
+struct AddDeviceSheet: View {
+    @ObservedObject var model: Model
+    let first: Bool
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                if let ready = model.wireGuardReady {
+                    let code = ReadyCode.for(config: model.wireGuardConfig(for: ready))
+                    VStack(spacing: 12) {
+                        Tile(title: "With a QR code", subtitle: "For an iPad or an iPhone") {
+                            if let qr = code.qr {
+                                // Black on white whatever the theme, with a quiet zone, so any camera reads it.
+                                Image(uiImage: qr)
+                                    .interpolation(.none)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .padding(16)
+                                    .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                                    .frame(maxWidth: 260)
+                                    .frame(maxWidth: .infinity)
+                                    .accessibilityLabel("QR code for the next device")
+                                    .accessibilityIdentifier("add.qr")
+                            }
+                            Steps(steps: ["In WireGuard, tap + > Create from QR code",
+                                          "Scan this code"], firstID: "add.steps")
+                        }
+                        Tile(title: "With a file", subtitle: "For a Mac or a travel router") {
+                            Steps(steps: ["Send it to the device, by AirDrop say",
+                                          "Import it in WireGuard"])
+                            if let file = code.file {
+                                ShareLink(item: file) {
+                                    Label("Share as a file, for a Mac or a router", systemImage: "square.and.arrow.up")
+                                }
+                                .buttonStyle(ActionButtonStyle(fullWidth: true))
+                                .accessibilityIdentifier("add.share")
+                            }
+                        }
+                        // The tunnel turns itself on at this hotspot and off everywhere else.
+                        Tile(title: "Turn on by itself", subtitle: "On the hotspot only") {
+                            Steps(steps: ["In WireGuard, edit the tunnel > On-Demand",
+                                          "Under Wi-Fi, pick only this iPhone's hotspot",
+                                          "Elsewhere it turns itself off"])
+                        }
                     }
-                    .buttonStyle(.bordered)
-                    .accessibilityIdentifier("add.share")
+                    .padding(12)
+                } else {
+                    // Claimed while open: the next one is on its way.
+                    ProgressView().padding(40)
                 }
-                Text("Install WireGuard on it, tap + > Create from QR code and scan this. Then edit the tunnel and turn On-Demand on for this iPhone's hotspot only. A travel router imports the file and turns its VPN on.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .accessibilityIdentifier("add.steps")
+            }
+            .background(Brand.page)
+            .navigationTitle(first ? LocalizedStringKey("Add a device") : LocalizedStringKey("Add another device"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                        .accessibilityIdentifier("add.done")
+                }
             }
         }
     }
@@ -44,6 +110,7 @@ struct AddDeviceSection: View {
 /// Why WireGuard isn't running, with the way out when the saved keys can't be read.
 struct WireGuardProblemSection: View {
     @ObservedObject var model: Model
+    @State private var confirmReset = false
 
     var body: some View {
         if let problem = model.wireGuardProblem {
@@ -51,10 +118,16 @@ struct WireGuardProblemSection: View {
                 Label(problem, systemImage: "exclamationmark.triangle")
                     .accessibilityIdentifier("wireguard.problem")
                 if model.wireGuardNeedsReset {
-                    Button("Start over with new keys", role: .destructive) { model.resetWireGuard() }
-                        .buttonStyle(.borderedProminent) // white on red: red text fails on the orange glass
-                        .tint(.red)
+                    Button("Start over with new keys") { confirmReset = true }
+                        .buttonStyle(DestructiveButtonStyle())
                         .accessibilityIdentifier("wireguard.reset")
+                        .sheet(isPresented: $confirmReset) {
+                            ConfirmSheet(title: Text("Start over with new keys?"),
+                                         message: Text("Every device has to be added again, with a new QR code or file."),
+                                         confirm: "Start over", confirmID: "wireguard.reset.confirm") {
+                                model.resetWireGuard()
+                            }
+                        }
                 }
             }
         }
@@ -75,67 +148,71 @@ struct DeviceView: View {
     private var connected: Bool { model.wireGuardConnected.contains(peer.address) }
 
     var body: some View {
-        List {
-            Section {
-                ConnectedLabel(connected: connected)
-                    .accessibilityIdentifier("device.status")
-                if connected {
-                    SpeedRow(down: model.deviceSpeeds[peer.address]?.down ?? 0, up: model.deviceSpeeds[peer.address]?.up ?? 0)
-                        .accessibilityIdentifier("device.speeds")
-                }
-                UsageRow(title: "Used today", bytes: model.usageToday.devices[peer.id.uuidString] ?? Usage.Bytes())
-                    .accessibilityIdentifier("device.usage")
-            } footer: {
-                Text("A travel router's figures include every device behind it.")
-            }
-            Section {
-                if let code {
-                    if let qr = code.qr {
-                        Image(uiImage: qr)
-                            .interpolation(.none)
-                            .resizable()
-                            .scaledToFit()
-                            .padding(14)
-                            .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                            .frame(maxWidth: 240)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
-                            .accessibilityLabel("QR code for this device")
-                            .accessibilityIdentifier("device.qr")
+        ScrollView {
+            VStack(spacing: 12) {
+                Tile {
+                    ConnectedLabel(connected: connected)
+                        .font(.title3.weight(.heavy))
+                        .accessibilityIdentifier("device.status")
+                    if connected {
+                        SpeedRow(down: model.deviceSpeeds[peer.address]?.down ?? 0, up: model.deviceSpeeds[peer.address]?.up ?? 0)
+                            .accessibilityIdentifier("device.speeds")
                     }
-                    if let file = code.file {
-                        ShareLink(item: file) {
-                            Label("Share as a file, for a Mac or a router", systemImage: "square.and.arrow.up")
+                    UsageRow(title: "Used today", bytes: model.usageToday.devices[peer.id.uuidString] ?? Usage.Bytes())
+                        .accessibilityIdentifier("device.usage")
+                }
+
+                Tile(title: "Set up again", subtitle: "Show it only to this device") {
+                    if let code {
+                        if let qr = code.qr {
+                            Image(uiImage: qr)
+                                .interpolation(.none)
+                                .resizable()
+                                .scaledToFit()
+                                .padding(14)
+                                .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                .frame(maxWidth: 240)
+                                .frame(maxWidth: .infinity)
+                                .accessibilityLabel("QR code for this device")
+                                .accessibilityIdentifier("device.qr")
                         }
+                        Steps(steps: ["Scan it on this device", "Delete the old tunnel in WireGuard"])
+                        if let file = code.file {
+                            ShareLink(item: file) {
+                                Label("Share as a file, for a Mac or a router", systemImage: "square.and.arrow.up")
+                            }
+                            .buttonStyle(ActionButtonStyle(fullWidth: true))
+                        }
+                        Button("Hide QR code") { self.code = nil }
+                            .buttonStyle(ViewButtonStyle())
+                    } else {
+                        Button {
+                            showCode()
+                        } label: {
+                            Label("Show QR code", systemImage: "qrcode")
+                        }
+                        .buttonStyle(ViewButtonStyle())
+                        .accessibilityIdentifier("device.showQR")
                     }
-                    Button("Hide QR code") { self.code = nil }
-                } else {
-                    Button {
-                        showCode()
-                    } label: {
-                        Label("Show QR code", systemImage: "qrcode")
-                    }
-                    .accessibilityIdentifier("device.showQR")
                 }
-            } header: {
-                Text("Set up again")
-            } footer: {
-                Text("Scan it on this device to set it up again, after a DNS change say. Then delete its old tunnel in WireGuard. The code holds the device's key, so show it only to the device.")
-            }
-            Section {
-                Button("Remove device", role: .destructive) { confirmRemove = true }
+
+                Button("Remove device") { confirmRemove = true }
+                    .buttonStyle(DestructiveButtonStyle())
                     .accessibilityIdentifier("device.remove")
-            } footer: {
-                Text("It can't connect any more. Delete its tunnel in its WireGuard app too.")
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
         }
-        .auroraList(flowing: model.sharing)
+        .background(Brand.page)
         .navigationTitle(Binding(get: { current.name }, set: { model.renameWireGuardDevice(peer.id, to: $0) }))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarRole(.editor)
         .onDisappear { code = nil } // the key doesn't stay on screen for the next visit
-        .confirmationDialog("Remove \(current.name)?", isPresented: $confirmRemove, titleVisibility: .visible) {
-            Button("Remove", role: .destructive) {
+        // A sheet from the bottom, with Cancel beside the red button.
+        .sheet(isPresented: $confirmRemove) {
+            ConfirmSheet(title: Text("Remove \(current.name)?"),
+                         message: Text("It can't connect any more. Delete its tunnel in its WireGuard app too."),
+                         confirm: "Remove", confirmID: "device.remove.confirm") {
                 model.removeWireGuardDevice(peer.id)
                 dismiss()
             }
@@ -255,6 +332,7 @@ struct DNSView: View {
             } footer: {
                 Text("Devices you add from now on use these. A device already added keeps its own: change DNS in its WireGuard tunnel, or remove it and add it again.")
             }
+            .listRowBackground(Brand.card)
 
             Section {
                 TextField("For example 192.168.8.1", text: $custom)
@@ -264,6 +342,7 @@ struct DNSView: View {
                     .onSubmit(useCustom)
                     .accessibilityIdentifier("dns.custom")
                 Button("Use these servers", action: useCustom)
+                    .buttonStyle(ActionButtonStyle())
                     .disabled(custom.trimmingCharacters(in: .whitespaces).isEmpty)
             } header: {
                 Text("Other servers")
@@ -273,8 +352,9 @@ struct DNSView: View {
                         .foregroundStyle(.red)
                 }
             }
+            .listRowBackground(Brand.card)
         }
-        .auroraList(flowing: model.sharing)
+        .pageList()
         .navigationTitle("DNS")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {

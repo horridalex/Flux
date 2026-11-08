@@ -52,13 +52,7 @@ final class DeviceViewTests: FluxUITestCase {
         element("device.remove").tap()
         XCTAssertTrue(app.buttons["Remove"].firstMatch.waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Remove iPad?"].exists)
-        // iOS 26 shows the dialog as a popover with no Cancel button: a tap outside it cancels.
-        let cancel = app.buttons["Cancel"].firstMatch
-        if cancel.exists {
-            cancel.tap()
-        } else {
-            app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.03)).tap()
-        }
+        app.buttons["Cancel"].firstMatch.tap()
         waitUntilGone(app.buttons["Remove"].firstMatch)
         XCTAssertTrue(app.navigationBars["iPad"].exists, "still on the device's screen")
         goBack(to: "Flux")
@@ -83,9 +77,9 @@ final class DeviceViewTests: FluxUITestCase {
         let banner = staticText("wireguard.problem") // the warning icon carries the identifier too
         XCTAssertTrue(reveal(banner).exists)
         XCTAssertEqual(banner.label, lockedText)
-        XCTAssertTrue(app.staticTexts["WIREGUARD ISN'T RUNNING"].exists)
+        XCTAssertTrue(app.staticTexts["WireGuard isn't running"].exists)
         XCTAssertFalse(element("wireguard.reset").exists, "a locked Keychain gets better by unlocking, not by starting over")
-        XCTAssertFalse(element("add.qr").exists)
+        XCTAssertFalse(element("add.showQR").exists)
         XCTAssertFalse(element("add.share").exists)
     }
 
@@ -93,15 +87,17 @@ final class DeviceViewTests: FluxUITestCase {
         launch(.wireGuardNeedsReset)
         XCTAssertEqual(staticText("wireguard.problem").label, resetText)
         XCTAssertEqual(reveal(element("wireguard.reset")).label, "Start over with new keys")
-        XCTAssertFalse(element("add.qr").exists)
+        XCTAssertFalse(element("add.showQR").exists)
     }
 
     func testStartingOverClearsTheProblemAndShowsTheQRCode() {
         launch(.wireGuardNeedsReset)
         reveal(element("wireguard.reset")).tap()
+        XCTAssertTrue(element("wireguard.reset.confirm").waitForExistence(timeout: 5), "it asks first")
+        element("wireguard.reset.confirm").tap()
         waitUntilGone(element("wireguard.problem"))
         XCTAssertFalse(element("wireguard.reset").exists)
-        XCTAssertTrue(reveal(element("add.qr")).exists)
-        XCTAssertTrue(app.staticTexts["ADD A DEVICE"].exists, "no device yet after starting over")
+        XCTAssertTrue(reveal(element("add.showQR")).exists)
+        XCTAssertTrue(app.staticTexts["Add a device"].exists, "no device yet after starting over")
     }
 }

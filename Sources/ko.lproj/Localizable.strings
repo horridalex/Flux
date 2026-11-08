@@ -1,31 +1,31 @@
 /* Korean. The keys are the English text in the code. %@ is text, %lld a number. */
 
 /* Main screen: the status card */
-"Sharing" = "공유 중";
-"Flux can't share yet" = "아직 공유할 수 없음";
+"Sharing" = "개인용 핫스팟 공유 중";
+"Flux can't share yet" = "아직 공유할 수 없어요";
 "Turn on Personal Hotspot" = "개인용 핫스팟을 켜세요";
-"Hotspot is on, no device is using Flux yet" = "핫스팟이 켜져 있지만 아직 Flux를 쓰는 기기가 없습니다";
-"Sharing with 1 device" = "기기 1대와 공유 중";
-"Sharing with %lld devices" = "기기 %lld대와 공유 중";
-"To stop, turn off Personal Hotspot." = "멈추려면 개인용 핫스팟을 끄세요.";
+"Hotspot is on, no device is using Flux yet" = "아직 연결된 기기가 없어요";
+"Sharing with 1 device" = "기기 1대가 연결되었어요";
+"Sharing with %lld devices" = "기기 %lld대가 연결되었어요";
+"To stop, turn off Personal Hotspot." = "멈추려면 개인용 핫스팟을 끄세요";
 "Personal Hotspot is on, but WireGuard isn't running." = "개인용 핫스팟은 켜져 있지만 WireGuard가 실행되지 않고 있습니다.";
 "Settings > Personal Hotspot > Allow Others to Join" = "설정 > 개인용 핫스팟 > 다른 사람의 연결 허용";
 "Opens Settings" = "설정을 엽니다";
 
 /* Main screen: speeds and usage */
 "Download %@, upload %@" = "다운로드 %@, 업로드 %@";
-"Used today" = "오늘 사용량";
-"Now" = "현재 속도";
+"Used today" = "오늘 쓴 데이터";
+"Now" = "지금 속도";
 "%@, download %@, upload %@" = "%@, 다운로드 %@, 업로드 %@";
 
 /* Main screen: devices and the QR code */
-"Devices" = "기기";
+"Devices" = "내 기기";
 "Connected" = "연결됨";
 "Not connected" = "연결 안 됨";
-"Add a device" = "기기 추가";
-"Add another device" = "다른 기기 추가";
+"Add a device" = "새 기기 연결하기";
+"Add another device" = "새 기기 연결하기";
 "QR code for the next device" = "다음 기기용 QR 코드";
-"Share as a file, for a Mac or a router" = "파일로 공유 (Mac 또는 라우터용)";
+"Share as a file, for a Mac or a router" = "파일로 공유하기";
 "Install WireGuard on it, tap + > Create from QR code and scan this. Then edit the tunnel and turn On-Demand on for this iPhone's hotspot only. A travel router imports the file and turns its VPN on." = "기기에 WireGuard를 설치하고 + > QR 코드로부터 생성을 눌러 이 코드를 스캔하세요. 그다음 터널을 편집해 주문형 활성화(On-Demand)를 이 iPhone의 핫스팟에서만 켜지도록 설정하세요. 여행용 라우터는 파일을 가져와 VPN을 켜면 됩니다.";
 "Device" = "기기";
 
@@ -38,10 +38,9 @@
 
 /* A device's screen */
 "Remove device" = "기기 제거";
-"Remove" = "제거";
-"Remove %@?" = "%@을(를) 제거할까요?";
+"Remove" = "지우기";
+"Remove %@?" = "%@을(를) 지울까요?";
 "It can't connect any more. Delete its tunnel in its WireGuard app too." = "이 기기는 더 이상 연결할 수 없습니다. 기기의 WireGuard 앱에서도 터널을 삭제하세요.";
-"A travel router's figures include every device behind it." = "여행용 라우터의 사용량에는 그 뒤에 연결된 모든 기기가 포함됩니다.";
 
 /* Settings > DNS */
 "Settings" = "설정";
@@ -79,7 +78,6 @@
 "Show QR code" = "QR 코드 보기";
 "Hide QR code" = "QR 코드 숨기기";
 "QR code for this device" = "이 기기용 QR 코드";
-"Scan it on this device to set it up again, after a DNS change say. Then delete its old tunnel in WireGuard. The code holds the device's key, so show it only to the device." = "DNS를 바꾼 뒤처럼 이 기기를 다시 설정할 때 기기에서 스캔하세요. 그다음 WireGuard에서 예전 터널을 삭제하세요. 이 코드에는 기기의 키가 들어 있으니 해당 기기에만 보여주세요.";
 
 /* The notification when Flux goes to sleep */
 "Flux is asleep" = "Flux가 잠들었습니다";
@@ -105,3 +103,48 @@
 
 /* The Control Center button's intent, in the app too */
 "Wakes Flux, so it shares when a device joins Personal Hotspot." = "기기가 개인용 핫스팟에 연결되면 공유하도록 Flux를 깨웁니다.";
+
+/* The speed card's two sides */
+"Download" = "받는 속도";
+"Upload" = "보내는 속도";
+
+/* Settings > Appearance */
+"Appearance" = "화면 모드";
+"Automatic" = "자동";
+"Light" = "라이트";
+"Dark" = "다크";
+"Automatic follows the iPhone's setting." = "자동은 iPhone 설정을 따릅니다.";
+
+/* The main screen's cards */
+"Measured every second" = "1초마다 새로 재요";
+"Tap a device to rename or remove it" = "기기를 눌러 이름을 바꾸거나 지울 수 있어요";
+"Connected · %@" = "연결됨 · %@";
+"History" = "기록 보기";
+"Done" = "완료";
+
+/* Adding a device */
+"Connect an iPad, a Mac or a travel router" = "iPad, Mac, 여행용 라우터를 연결할 수 있어요";
+"Connect" = "연결하기";
+"With a QR code" = "QR 코드로 연결";
+"For an iPad or an iPhone" = "iPad·iPhone용";
+"With a file" = "파일로 연결";
+"For a Mac or a travel router" = "Mac·라우터용";
+"Send the file to it, by AirDrop say. On a Mac, import it in WireGuard; on a router, add it as a WireGuard client and turn its VPN on." = "AirDrop 등으로 파일을 보내세요. Mac은 WireGuard 앱에서 가져오고, 라우터는 VPN 설정에서 WireGuard 클라이언트로 추가한 뒤 VPN을 켜면 돼요.";
+"Cancel" = "닫기";
+"In WireGuard, tap + > Create from QR code" = "WireGuard 앱에서 + > QR 코드로 생성";
+"Import it in WireGuard" = "WireGuard 앱에서 파일 가져오기";
+"Start over with new keys?" = "새 키로 다시 시작할까요?";
+"Every device has to be added again, with a new QR code or file." = "연결한 기기를 모두 새 QR 코드나 파일로 다시 추가해야 해요.";
+"Start over" = "다시 시작";
+"Scan this code" = "이 코드를 스캔";
+"Send it to the device, by AirDrop say" = "AirDrop 등으로 기기에 파일 보내기";
+"Turn on by itself" = "자동으로 켜고 끄기";
+"On the hotspot only" = "이 핫스팟에서만 켜져요";
+"In WireGuard, edit the tunnel > On-Demand" = "WireGuard 앱에서 터널 편집 > On-Demand 켜기";
+"Under Wi-Fi, pick only this iPhone's hotspot" = "Wi-Fi에서 이 iPhone 핫스팟 이름만 선택";
+"Elsewhere it turns itself off" = "다른 Wi-Fi에서는 자동으로 꺼져요";
+
+/* The device screen's Set up again card. */
+"Show it only to this device" = "이 기기에만 보여 주세요";
+"Scan it on this device" = "이 기기에서 코드 스캔";
+"Delete the old tunnel in WireGuard" = "WireGuard에서 예전 터널 삭제";

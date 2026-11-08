@@ -11,10 +11,16 @@ enum Format {
 
     /// Bits per second in the unit a person expects on a speed test.
     static func speed(_ bps: Double) -> String {
+        let (number, unit) = speedParts(bps)
+        return "\(number) \(unit)"
+    }
+
+    /// `speed` split in two, for a big number with its unit small beside it.
+    static func speedParts(_ bps: Double) -> (number: String, unit: String) {
         switch bps {
-        case 1e6...: return String(format: "%.1f Mbit/s", bps / 1e6)
-        case 1e3...: return String(format: "%.0f kbit/s", bps / 1e3)
-        default: return String(format: "%.0f bit/s", bps)
+        case 1e6...: return (String(format: "%.1f", bps / 1e6), "Mbit/s")
+        case 1e3...: return (String(format: "%.0f", bps / 1e3), "kbit/s")
+        default: return (String(format: "%.0f", bps), "bit/s")
         }
     }
 }

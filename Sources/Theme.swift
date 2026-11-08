@@ -1,122 +1,238 @@
 import SwiftUI
+import UIKit
 
-// Flux's look: an aurora that flows behind the main screen while Flux shares, and opaque cards on
-// it, so text keeps its contrast. Before iOS 18, which has no mesh gradient, the aurora is a plain
-// gradient that doesn't move.
+// Flux's look, in the way of a good Korean finance app: a calm page, rounded cards with room, plain
+// sentences with the number that matters in blue, rows led by an icon tile, and two kinds of button:
+// solid blue to do something, tinted to look at something. Every colour here keeps 4.5:1 for its
+// text, in light and in dark.
 
-/// The brand's colours, from the app icon: cyan into blue into violet.
+private func dynamic(light: (CGFloat, CGFloat, CGFloat), dark: (CGFloat, CGFloat, CGFloat)) -> Color {
+    Color(uiColor: UIColor { traits in
+        let c = traits.userInterfaceStyle == .dark ? dark : light
+        return UIColor(red: c.0, green: c.1, blue: c.2, alpha: 1)
+    })
+}
+
+/// The brand's colours. The sweep stays for the Live Activity and the widgets.
 enum Brand {
     static let cyan = Color(red: 0.35, green: 0.90, blue: 1.00)
     static let blue = Color(red: 0.30, green: 0.55, blue: 1.00)
     static let violet = Color(red: 0.60, green: 0.38, blue: 1.00)
     static let magenta = Color(red: 0.88, green: 0.43, blue: 0.90)
-
-    /// For a symbol or a big number: the icon's sweep.
     static let flow = LinearGradient(colors: [cyan, blue, violet], startPoint: .topLeading, endPoint: .bottomTrailing)
+
+    /// Blue text and symbols: dark enough on white, light enough on the dark cards.
+    static let accent = dynamic(light: (0.08, 0.36, 0.80), dark: (0.58, 0.76, 1.00))
+    /// A solid button's blue, with white text on it in both modes.
+    static let action = dynamic(light: (0.11, 0.42, 0.87), dark: (0.18, 0.43, 0.90))
+    /// A tinted button's ground, under `accent` text.
+    static let actionTint = dynamic(light: (0.91, 0.95, 1.00), dark: (0.13, 0.17, 0.25))
+
+    /// The page, the cards on it, and the tiles inside a card (icon tiles, the speed boxes).
+    static let page = dynamic(light: (0.95, 0.96, 0.97), dark: (0.09, 0.09, 0.11))
+    static let card = dynamic(light: (1.00, 1.00, 1.00), dark: (0.13, 0.13, 0.15))
+    static let tile = dynamic(light: (0.95, 0.96, 0.97), dark: (0.17, 0.17, 0.20))
+    /// Grey text under a title, on a card.
+    static let subtext = dynamic(light: (0.36, 0.40, 0.45), dark: (0.62, 0.65, 0.69))
 }
 
-/// Behind every screen. `flowing` moves it, while Flux shares, unless Reduce Motion is on.
-/// `calm` veils it more, for a List, whose headers and footers sit on it with no glass between.
-struct AuroraBackground: View {
-    var flowing: Bool
-    var calm = false
-    @Environment(\.colorScheme) private var scheme
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    /// A 3 by 3 grid, row by row. Dark enough at night and light enough by day for text on glass.
-    private static let night: [Color] = [
-        Color(red: 0.03, green: 0.05, blue: 0.16), Color(red: 0.05, green: 0.16, blue: 0.36), Color(red: 0.12, green: 0.07, blue: 0.30),
-        Color(red: 0.04, green: 0.30, blue: 0.46), Color(red: 0.13, green: 0.17, blue: 0.52), Color(red: 0.34, green: 0.13, blue: 0.50),
-        Color(red: 0.03, green: 0.10, blue: 0.24), Color(red: 0.24, green: 0.11, blue: 0.44), Color(red: 0.44, green: 0.14, blue: 0.44),
-    ]
-    private static let day: [Color] = [
-        Color(red: 0.93, green: 0.96, blue: 1.00), Color(red: 0.82, green: 0.93, blue: 1.00), Color(red: 0.90, green: 0.88, blue: 1.00),
-        Color(red: 0.78, green: 0.95, blue: 0.99), Color(red: 0.86, green: 0.88, blue: 1.00), Color(red: 0.93, green: 0.85, blue: 1.00),
-        Color(red: 0.90, green: 0.95, blue: 1.00), Color(red: 0.91, green: 0.87, blue: 1.00), Color(red: 0.98, green: 0.88, blue: 0.96),
-    ]
-
-    private var palette: [Color] { scheme == .dark ? Self.night : Self.day }
-
-    var body: some View {
-        Group {
-            if #available(iOS 18.0, *) {
-                if flowing && !reduceMotion {
-                    // 30 frames a second is plenty for something this slow, and only on screen.
-                    TimelineView(.animation(minimumInterval: 1.0 / 30)) { context in
-                        mesh(at: context.date.timeIntervalSinceReferenceDate)
-                    }
-                } else {
-                    mesh(at: 0)
-                }
-            } else {
-                LinearGradient(colors: [palette[0], palette[4], palette[8]], startPoint: .topLeading, endPoint: .bottomTrailing)
-            }
-        }
-        // A veil of the system background, so secondary text on glass keeps its contrast where the
-        // aurora is brightest. The accessibility audit's contrast test fails without it.
-        .overlay(Color(uiColor: .systemBackground).opacity(calm ? 0.8 : (scheme == .dark ? 0.3 : 0.4)))
-        .ignoresSafeArea()
-        .accessibilityHidden(true)
-    }
-
-    /// The grid's inner points drift on slow circles, so the colours flow into each other.
-    @available(iOS 18.0, *)
-    private func mesh(at time: Double) -> some View {
-        let t = Float(time.truncatingRemainder(dividingBy: 10_000) / 5)
-        let top = SIMD2<Float>(0.5 + 0.2 * sin(t), 0)
-        let left = SIMD2<Float>(0, 0.5 + 0.15 * cos(t * 0.8))
-        let middle = SIMD2<Float>(0.5 + 0.18 * sin(t * 1.3), 0.5 + 0.18 * cos(t))
-        let right = SIMD2<Float>(1, 0.5 + 0.15 * sin(t * 0.9))
-        let bottom = SIMD2<Float>(0.5 + 0.2 * cos(t * 0.7), 1)
-        let points: [SIMD2<Float>] = [
-            SIMD2(0, 0), top, SIMD2(1, 0),
-            left, middle, right,
-            SIMD2(0, 1), bottom, SIMD2(1, 1),
-        ]
-        return MeshGradient(width: 3, height: 3, points: points, colors: palette)
+extension View {
+    /// A card on the page, with rounded corners. `tint` washes it with a colour, for a warning.
+    func card(cornerRadius: CGFloat = 26, tint: Color? = nil) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        return self
+            .background((tint ?? .clear).opacity(0.12), in: shape)
+            .background(Brand.card, in: shape)
     }
 }
 
 extension View {
-    /// A tile on the aurora: an opaque card. `tint` colours it a little, for the status.
-    func glassTile(cornerRadius: CGFloat = 24, tint: Color? = nil) -> some View {
-        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-        // An opaque card: glass let the aurora show through the text, and the accessibility
-        // audit failed it, even in the primary colour. `tint` colours the card lightly, for
-        // the status, and the rim keeps a little of the glass look.
-        return self
-            .background((tint ?? .clear).opacity(0.5), in: shape)
-            .background(Color(uiColor: .secondarySystemGroupedBackground), in: shape)
-            .overlay(shape.strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
-    }
-
-    /// A List keeps the system's grouped background: its headers and footers sit straight on it,
-    /// with no card between, and on the aurora they failed the contrast audit. `flowing` stays for
-    /// the callers, the aurora being the main screen's alone.
-    func auroraList(flowing: Bool = false) -> some View {
-        self
+    /// A pushed screen's List, on the same page and cards as the main screen.
+    func pageList() -> some View {
+        scrollContentBackground(.hidden).background(Brand.page)
     }
 }
 
-/// A tile with a small title over what it holds, the bento grid's building block.
+/// Solid blue, white text: a button that does something (share, apply).
+struct ActionButtonStyle: ButtonStyle {
+    var fullWidth = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.bold))
+            .lineLimit(1)
+            .fixedSize(horizontal: !fullWidth, vertical: false)
+            .frame(maxWidth: fullWidth ? .infinity : nil)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 13)
+            .foregroundStyle(Color.white)
+            .background(Brand.action, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .opacity(configuration.isPressed ? 0.75 : 1)
+    }
+}
+
+/// Tinted, blue text: a button that shows something (the history, a QR code).
+struct ViewButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.bold))
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.horizontal, 18)
+            .padding(.vertical, 11)
+            .foregroundStyle(Brand.accent)
+            .background(Brand.actionTint, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .opacity(configuration.isPressed ? 0.75 : 1)
+    }
+}
+
+/// A rounded square holding a symbol, at the start of a row.
+struct IconTile: View {
+    let systemName: String
+    var color: Color = .primary
+    var size: CGFloat = 48
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.system(size: size * 0.44, weight: .semibold))
+            .foregroundStyle(color)
+            .frame(width: size, height: size)
+            .background(Brand.tile, in: RoundedRectangle(cornerRadius: size * 0.31, style: .continuous))
+            .accessibilityHidden(true)
+    }
+}
+
+/// A card with a bold title (and a grey line under it) over what it holds.
 struct Tile<Content: View>: View {
     var title: LocalizedStringKey?
+    var subtitle: LocalizedStringKey?
     var tint: Color?
     @ViewBuilder var content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if let title {
-                Text(title)
-                    .font(.caption.weight(.semibold))
-                    .textCase(.uppercase)
-                    .foregroundStyle(Color.primary.opacity(0.8)) // .secondary is too faint on glass
-                    .accessibilityAddTraits(.isHeader)
+        VStack(alignment: .leading, spacing: 14) {
+            if title != nil || subtitle != nil {
+                VStack(alignment: .leading, spacing: 4) {
+                    if let title {
+                        Text(title)
+                            .font(.title3.weight(.heavy))
+                            .accessibilityAddTraits(.isHeader)
+                    }
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(.subheadline)
+                            .foregroundStyle(Brand.subtext)
+                            .lineLimit(1) // a grey line under a title never takes two
+                    }
+                }
             }
             content
         }
-        .padding(16)
+        .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .glassTile(tint: tint)
+        .card(tint: tint)
+    }
+}
+
+/// The second button of a confirmation sheet: grey, to back out.
+struct SecondaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.bold))
+            .lineLimit(1)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .foregroundStyle(Color.primary)
+            .background(Brand.tile, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .opacity(configuration.isPressed ? 0.75 : 1)
+    }
+}
+
+/// Solid red, white text: a button that removes or resets something for good.
+struct DestructiveButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.bold))
+            .lineLimit(1)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .foregroundStyle(Color.white)
+            .background(Brand.danger, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .opacity(configuration.isPressed ? 0.75 : 1)
+    }
+}
+
+extension Brand {
+    /// A destructive button's red, with white text on it in both modes.
+    static let danger = Color(red: 0.78, green: 0.22, blue: 0.27)
+}
+
+/// Asks before something that can't be undone, from the bottom of the screen: a question, what it
+/// means, and Cancel beside the red button that does it.
+struct ConfirmSheet: View {
+    let title: Text
+    let message: Text
+    let confirm: LocalizedStringKey
+    var confirmID = "confirm.do"
+    let action: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            title
+                .font(.title3.weight(.heavy))
+                .fixedSize(horizontal: false, vertical: true)
+            message
+                .font(.body)
+                .foregroundStyle(Brand.subtext)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            HStack(spacing: 10) {
+                Button("Cancel") { dismiss() }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .accessibilityIdentifier("confirm.cancel")
+                Button(confirm) {
+                    dismiss()
+                    action()
+                }
+                .buttonStyle(DestructiveButtonStyle())
+                .accessibilityIdentifier(confirmID)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 32)
+        .padding(.bottom, 16)
+        .presentationDetents([.height(300), .medium])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(32)
+        .presentationBackground(Brand.card)
+    }
+}
+
+/// Numbered steps, one line each: a small numbered circle, then the step.
+struct Steps: View {
+    let steps: [LocalizedStringKey]
+    /// An identifier for the first step, for the UI tests.
+    var firstID: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
+                HStack(spacing: 10) {
+                    Text(verbatim: "\(index + 1)")
+                        .font(.footnote.weight(.bold))
+                        .foregroundStyle(Brand.accent)
+                        .frame(width: 24, height: 24)
+                        .background(Brand.actionTint, in: Circle())
+                        .accessibilityHidden(true)
+                    Text(step)
+                        .font(.subheadline)
+                        .foregroundStyle(Brand.subtext)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .accessibilityIdentifier(index == 0 ? (firstID ?? "") : "")
+                }
+            }
+        }
     }
 }

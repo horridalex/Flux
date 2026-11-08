@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Draws Flux's 1024 px app icon: three ribbons flowing across a night-to-aurora gradient.
+"""Draws Flux's 1024 px app icon: one puffy blue wave, like soft clay, on a pale blue ground.
 
 Run: python3 scripts/make-icon.py Sources/Assets.xcassets/AppIcon.appiconset/icon-1024.png
 Needs Pillow (pip install pillow). It draws at twice the size and scales down, for smooth edges.
@@ -17,77 +17,58 @@ def lerp(a, b, t):
     return tuple(round(x + (y - x) * t) for x, y in zip(a, b))
 
 
-def gradient(size, stops, angle_deg):
-    """A linear gradient through `stops` [(t, (r, g, b)), ...] at `angle_deg`, 0 = left to right."""
-    w, h = size
-    a = math.radians(angle_deg)
-    dx, dy = math.cos(a), math.sin(a)
-    # Project each corner to find the range the gradient runs over.
-    proj = [x * dx + y * dy for x, y in ((0, 0), (w, 0), (0, h), (w, h))]
-    lo, hi = min(proj), max(proj)
-    line = Image.new("RGB", (512, 1))
-    px = line.load()
-    for i in range(512):
-        t = i / 511
-        for (t0, c0), (t1, c1) in zip(stops, stops[1:]):
-            if t0 <= t <= t1:
-                px[i, 0] = lerp(c0, c1, (t - t0) / (t1 - t0) if t1 > t0 else 0)
-                break
-    # Map every pixel's projection onto the line.
-    img = Image.new("RGB", size)
-    ip = img.load()
-    lp = line.load()
-    for y in range(h):
-        for x in range(w):
-            t = ((x * dx + y * dy) - lo) / (hi - lo)
-            ip[x, y] = lp[min(511, max(0, int(t * 511))), 0]
+def vertical_gradient(top, bottom):
+    img = Image.new("RGB", (S, S))
+    d = ImageDraw.Draw(img)
+    for y in range(S):
+        d.line([(0, y), (S, y)], fill=lerp(top, bottom, y / (S - 1)))
     return img
 
 
-def ribbon_mask(phase, amp, center, thickness, wavelength):
-    """A band that flows across the icon as a sine wave, thin at both ends and thick in the middle."""
-    upper, lower = [], []
-    steps = 240
-    for i in range(steps + 1):
-        x = -0.1 * S + i * (1.2 * S) / steps
-        u = i / steps
-        y = center + amp * math.sin(2 * math.pi * x / wavelength + phase)
-        half = thickness / 2 * (0.25 + 0.75 * math.sin(math.pi * u) ** 0.8)
-        upper.append((x, y - half))
-        lower.append((x, y + half))
+def wave(cy, amp, x0, x1, wavelength, phase):
+    """Points along a sine wave across the icon, as fractions of its width."""
+    return [
+        (S * x, cy + amp * math.sin(2 * math.pi * x / wavelength + phase))
+        for x in (x0 + (x1 - x0) * i / 300 for i in range(301))
+    ]
+
+
+def stroke(points, thickness):
+    """A mask of a round-capped stroke along `points`."""
     mask = Image.new("L", (S, S), 0)
-    ImageDraw.Draw(mask).polygon(upper + lower[::-1], fill=255)
+    d = ImageDraw.Draw(mask)
+    r = thickness / 2
+    for a, b in zip(points, points[1:]):
+        steps = max(1, int(math.dist(a, b) / 2))
+        for k in range(steps):
+            x = a[0] + (b[0] - a[0]) * k / steps
+            y = a[1] + (b[1] - a[1]) * k / steps
+            d.ellipse((x - r, y - r, x + r, y + r), fill=255)
     return mask
 
 
+def paint(img, color, mask):
+    return Image.composite(Image.new("RGBA", (S, S), color + (255,)), img, mask)
+
+
 def main(out):
-    # Background: deep night blue to violet, with a soft aurora glow low in the middle.
-    small = (256, 256)
-    bg = gradient(small, [(0, (8, 12, 38)), (0.55, (22, 20, 74)), (1, (58, 22, 104))], 70).resize((S, S), Image.BICUBIC)
-    glow = Image.new("L", (S, S), 0)
-    ImageDraw.Draw(glow).ellipse((int(0.05 * S), int(0.45 * S), int(0.95 * S), int(1.15 * S)), fill=150)
-    glow = glow.filter(ImageFilter.GaussianBlur(S * 0.12))
-    bg = Image.composite(Image.new("RGB", (S, S), (24, 110, 170)), bg, glow)
+    img = vertical_gradient((232, 240, 255), (202, 220, 252)).convert("RGBA")
+    points = wave(S * 0.5, S * 0.09, 0.2, 0.8, 0.6, 0.3)
+    body = stroke(points, S * 0.2)
 
-    ribbons = [
-        # phase, amplitude, centre y, thickness, wavelength, colours left to right
-        (0.4, 0.09 * S, 0.36 * S, 0.13 * S, 1.05 * S, [(0, (90, 240, 255)), (1, (70, 140, 255))]),
-        (1.6, 0.10 * S, 0.50 * S, 0.15 * S, 1.15 * S, [(0, (60, 170, 255)), (1, (150, 90, 255))]),
-        (2.9, 0.08 * S, 0.64 * S, 0.11 * S, 0.95 * S, [(0, (120, 110, 255)), (1, (230, 110, 230))]),
-    ]
-    img = bg
-    for phase, amp, center, thick, wave, stops in ribbons:
-        mask = ribbon_mask(phase, amp, center, thick, wave)
-        fill = gradient(small, stops, 0).resize((S, S), Image.BICUBIC)
-        # A glow under the ribbon, then the ribbon, then a glassy highlight along its top edge.
-        halo = mask.filter(ImageFilter.GaussianBlur(S * 0.025)).point(lambda v: int(v * 0.55))
-        img = Image.composite(fill, img, halo)
-        img = Image.composite(fill, img, mask.filter(ImageFilter.GaussianBlur(1.5)))
-        shifted = ImageChops.offset(mask, 0, int(thick * 0.18))
-        edge = ImageChops.subtract(mask, shifted).filter(ImageFilter.GaussianBlur(S * 0.006))
-        img = Image.composite(Image.new("RGB", (S, S), (255, 255, 255)), img, edge.point(lambda v: int(v * 0.45)))
+    # A soft shadow under the clay, the clay itself, light on its top edge and shade on its bottom.
+    shadow = body.filter(ImageFilter.GaussianBlur(S * 0.035)).point(lambda v: int(v * 0.45))
+    img = paint(img, (30, 70, 160), ImageChops.offset(shadow, 0, int(S * 0.045)))
+    img = paint(img, (40, 110, 230), body)
+    top = ImageChops.subtract(body, ImageChops.offset(body, 0, int(S * 0.05)))
+    img = paint(img, (150, 200, 255), top.filter(ImageFilter.GaussianBlur(S * 0.02)).point(lambda v: int(v * 0.8)))
+    bottom = ImageChops.subtract(body, ImageChops.offset(body, 0, -int(S * 0.05)))
+    img = paint(img, (20, 70, 170), bottom.filter(ImageFilter.GaussianBlur(S * 0.02)).point(lambda v: int(v * 0.6)))
+    # A glossy highlight along the first crest.
+    gloss = stroke([(x, y - S * 0.045) for x, y in points[60:140]], S * 0.03)
+    img = paint(img, (255, 255, 255), gloss.filter(ImageFilter.GaussianBlur(S * 0.01)).point(lambda v: int(v * 0.7)))
 
-    img.resize((SIZE, SIZE), Image.LANCZOS).save(out, "PNG")  # RGB, no alpha, as iOS wants
+    img.convert("RGB").resize((SIZE, SIZE), Image.LANCZOS).save(out, "PNG")  # no alpha, as iOS wants
     print("wrote", out)
 
 
