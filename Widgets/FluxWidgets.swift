@@ -179,8 +179,13 @@ private struct StatusWidgetView: View {
 
     private var header: some View {
         HStack(spacing: 6) {
-            Image(systemName: "water.waves")
-                .foregroundStyle(Brand.accent)
+            // The app icon, small, with its rounded corners. Widgets/Assets.xcassets has a copy at
+            // this size; scripts/make-icon.py writes it with the app's.
+            Image("FluxIcon")
+                .resizable()
+                .frame(width: 22, height: 22)
+                .clipShape(RoundedRectangle(cornerRadius: 5.5, style: .continuous))
+                .accessibilityHidden(true)
             Text(verbatim: "Flux")
                 .font(.subheadline.weight(.heavy))
         }
