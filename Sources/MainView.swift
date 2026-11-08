@@ -3,6 +3,8 @@ import SwiftUI
 struct MainView: View {
     @ObservedObject private var model = Model.shared
     @AppStorage(Appearance.key) private var appearance: Appearance = .automatic
+    @AppStorage(AutoStop.key) private var autoStop: AutoStop = .ten
+    @AppStorage(ConnectionNotice.key) private var connectionNotices = true
 
     var body: some View {
         NavigationStack {
@@ -13,7 +15,7 @@ struct MainView: View {
                     StatusCard(model: model)
 
                     if let warning = model.expiryWarning {
-                        Tile(tint: .orange) {
+                        Tile {
                             Label {
                                 Text(warning)
                             } icon: {
@@ -69,6 +71,24 @@ struct MainView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("settings.dns")
+                        NavigationLink { AutoStopView() } label: {
+                            SettingRow(icon: "moon.zzz", title: "Auto-stop") {
+                                Text(autoStop.title)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("settings.autoStop")
+                        Toggle(isOn: $connectionNotices) {
+                            HStack(spacing: 14) {
+                                IconTile(systemName: "bell", color: Brand.subtext, size: 40)
+                                Text("Connection alerts")
+                                    .font(.body.weight(.semibold))
+                            }
+                        }
+                        .tint(Brand.action)
+                        .padding(.vertical, 8)
+                        .onChange(of: connectionNotices) { _, on in if on { SleepNotice.askOnce() } }
+                        .accessibilityIdentifier("settings.connectionNotices")
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
@@ -258,7 +278,7 @@ enum Direction {
 struct StatusCard: View {
     @ObservedObject var model: Model
 
-    private var tint: Color { model.sharing ? .green : .orange }
+    private var tint: Color { model.sharing ? Brand.accent : .orange }
     private var sharing: Bool { model.sharing }
 
 
@@ -294,14 +314,16 @@ struct StatusCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            // Always there, so it never fades in or out with the card's animation: a contrast check
+            // that lands mid-fade fails.
             HStack(spacing: 8) {
                 Circle()
                     .fill(tint)
                     .frame(width: 10, height: 10)
                     .accessibilityHidden(true)
-                Text(title)
-                    .font(.subheadline.weight(.semibold)) // the primary colour: grey failed on the orange card
-                    .accessibilityIdentifier("status.title")
+                Text(sharing || model.running ? title : "Hotspot is off")
+                    .font(.subheadline.weight(.semibold))
+                    .accessibilityIdentifier(sharing || model.running ? "status.title" : "status.state")
             }
             if sharing {
                 Text(headlineHighlighted)
@@ -320,20 +342,27 @@ struct StatusCard: View {
                     .font(.title3.weight(.heavy))
                     .accessibilityIdentifier("status.headline")
             } else {
-                Button(action: Self.openHotspotSettings) {
-                    Text("Settings > Personal Hotspot > Allow Others to Join")
-                        .font(.subheadline.weight(.semibold))
-                        .underline()
-                        .multilineTextAlignment(.leading)
-                        .foregroundStyle(Color.primary) // inside a button, .primary is the button's tint
-                }
-                .accessibilityIdentifier("status.hotspotPath")
-                .accessibilityHint("Opens Settings")
+                // Like the sharing card: the small line with its dot above, the sentence, one grey
+                // line, and the button that does it.
+                Text(title)
+                    .font(.title2.weight(.heavy))
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("status.title")
+                Text("Turn on Allow Others to Join")
+                    .font(.subheadline)
+                    .foregroundStyle(Brand.subtext)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                    .accessibilityIdentifier("status.hotspotPath")
+                Button("Open Settings", action: Self.openHotspotSettings)
+                    .buttonStyle(ActionButtonStyle())
+                    .padding(.top, 4)
+                    .accessibilityIdentifier("status.openSettings")
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(24)
-        .card(tint: sharing ? nil : .orange)
+        .card()
         .animation(.smooth, value: sharing)
     }
 }

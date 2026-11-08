@@ -114,8 +114,12 @@ struct WireGuardProblemSection: View {
 
     var body: some View {
         if let problem = model.wireGuardProblem {
-            Tile(title: "WireGuard isn't running", tint: .orange) {
-                Label(problem, systemImage: "exclamationmark.triangle")
+            Tile(title: "WireGuard isn't running") {
+                Label {
+                    Text(problem)
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                }
                     .accessibilityIdentifier("wireguard.problem")
                 if model.wireGuardNeedsReset {
                     Button("Start over with new keys") { confirmReset = true }
@@ -228,7 +232,7 @@ struct DeviceView: View {
 }
 
 /// "Connected" or "Not connected". The text keeps the normal colours, since green text on the
-/// grouped background fails the contrast audit. The icon carries the green.
+/// grouped background fails the contrast audit. The icon carries the blue.
 struct ConnectedLabel: View {
     let connected: Bool
 
@@ -238,7 +242,7 @@ struct ConnectedLabel: View {
                 .foregroundStyle(connected ? .primary : .secondary)
         } icon: {
             Image(systemName: connected ? "checkmark.circle.fill" : "circle.dashed")
-                .foregroundStyle(connected ? .green : .secondary)
+                .foregroundStyle(connected ? Brand.accent : .secondary)
         }
     }
 }
