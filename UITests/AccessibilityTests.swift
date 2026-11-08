@@ -16,7 +16,7 @@ final class AccessibilityTests: FluxUITestCase {
 
     func testLowerPartOfTheMainScreenPassesTheStructuralAudit() throws {
         launch(.sharing)
-        reveal(element("add.steps"))
+        reveal(element("settings.dns"))
         try audit(types: structuralAudit)
     }
 
@@ -80,8 +80,17 @@ final class AccessibilityTests: FluxUITestCase {
 
     // MARK: devices and the QR code
 
-    func testQRCodeSectionPassesTheStructuralAudit() throws {
+    func testAddDeviceSheetPassesTheAccessibilityAudit() throws {
         launch(.noDevices)
+        reveal(element("add.showQR")).tap()
+        XCTAssertTrue(element("add.qr").waitForExistence(timeout: 5))
+        try audit()
+    }
+
+    func testLowerPartOfTheAddDeviceSheetPassesTheStructuralAudit() throws {
+        launch(.noDevices)
+        reveal(element("add.showQR")).tap()
+        XCTAssertTrue(element("add.qr").waitForExistence(timeout: 5))
         reveal(element("add.share"))
         try audit(types: structuralAudit)
     }

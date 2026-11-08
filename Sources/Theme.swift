@@ -22,11 +22,11 @@ enum Brand {
     static let flow = LinearGradient(colors: [cyan, blue, violet], startPoint: .topLeading, endPoint: .bottomTrailing)
 
     /// Blue text and symbols: dark enough on white, light enough on the dark cards.
-    static let accent = dynamic(light: (0.11, 0.42, 0.87), dark: (0.49, 0.70, 1.00))
+    static let accent = dynamic(light: (0.08, 0.36, 0.80), dark: (0.58, 0.76, 1.00))
     /// A solid button's blue, with white text on it in both modes.
     static let action = dynamic(light: (0.11, 0.42, 0.87), dark: (0.18, 0.43, 0.90))
     /// A tinted button's ground, under `accent` text.
-    static let actionTint = dynamic(light: (0.91, 0.95, 1.00), dark: (0.15, 0.20, 0.29))
+    static let actionTint = dynamic(light: (0.91, 0.95, 1.00), dark: (0.13, 0.17, 0.25))
 
     /// The page, the cards on it, and the tiles inside a card (icon tiles, the speed boxes).
     static let page = dynamic(light: (0.95, 0.96, 0.97), dark: (0.09, 0.09, 0.11))
