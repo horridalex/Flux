@@ -81,7 +81,6 @@
 
 /* The notification when Flux goes to sleep */
 "Flux is asleep" = "Flux가 잠들었습니다";
-"No device used the hotspot for 10 minutes, so Flux stopped to save battery. Open Flux or run Start Flux before you turn the hotspot on again." = "10분 동안 핫스팟을 쓰는 기기가 없어서 배터리를 아끼려고 멈췄습니다. 핫스팟을 다시 켜기 전에 Flux를 열거나 'Flux 시작'을 실행하세요.";
 
 /* Usage: this month, the last 30 days and the monthly limit */
 "This month %@" = "이번 달 %@";
@@ -153,3 +152,22 @@
 "Hotspot is off" = "핫스팟 꺼짐";
 "Turn on Allow Others to Join" = "'다른 사람의 연결 허용'을 켜 주세요";
 "Open Settings" = "설정 열기";
+
+/* Sleep notice, with the minutes chosen in Settings > Auto-stop. */
+"No device used the hotspot for %lld minutes, so Flux stopped to save battery. Open Flux or run Start Flux before you turn the hotspot on again." = "%lld분 동안 핫스팟을 쓰는 기기가 없어서 배터리를 아끼려고 멈췄어요. 핫스팟을 다시 켜기 전에 Flux를 열거나 'Flux 시작'을 실행하세요.";
+
+/* Connection alerts. */
+"%@ connected" = "%@ 연결됨";
+"%@ disconnected" = "%@ 연결 끊김";
+"It's using this iPhone's internet through Flux." = "Flux로 이 iPhone의 인터넷을 쓰고 있어요.";
+"It's no longer sharing through Flux." = "이제 Flux로 공유하지 않아요.";
+"Connection alerts" = "연결 알림";
+
+/* Settings > Auto-stop. */
+"Auto-stop" = "자동 멈춤";
+"5 minutes" = "5분";
+"10 minutes" = "10분";
+"30 minutes" = "30분";
+"Never" = "멈추지 않음";
+"With no hotspot for this long, Flux stops to save battery." = "이 시간 동안 핫스팟이 없으면 배터리를 아끼려고 멈춰요.";
+"Never stopping uses more battery." = "멈추지 않으면 배터리를 더 써요.";

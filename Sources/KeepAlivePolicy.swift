@@ -10,9 +10,9 @@ enum KeepAlivePolicy {
     static let grace: TimeInterval = 10 * 60
 
     /// `waitingSince` is when the hotspot went away, or when Flux was last opened if that was later.
-    /// Nil while the hotspot is on.
-    static func plays(waitingSince: Date?, now: Date) -> Bool {
-        guard let waitingSince else { return true }
+    /// Nil while the hotspot is on. `grace` is the wait chosen in Settings, nil for never stopping.
+    static func plays(waitingSince: Date?, now: Date, grace: TimeInterval? = KeepAlivePolicy.grace) -> Bool {
+        guard let waitingSince, let grace else { return true }
         return now.timeIntervalSince(waitingSince) < grace
     }
 
@@ -20,5 +20,22 @@ enum KeepAlivePolicy {
     /// background a device that joins waits a little longer, and Flux wakes a third as often.
     static func watchInterval(sceneActive: Bool) -> (every: Duration, tolerance: Duration) {
         sceneActive ? (.seconds(5), .seconds(1)) : (.seconds(15), .seconds(5))
+    }
+}
+
+/// Settings > Auto-stop: how long Flux waits with no hotspot before it stops, see `KeepAlivePolicy`.
+/// Longer saves opening Flux again after a short break, at the cost of battery.
+enum AutoStop: Int, CaseIterable, Identifiable {
+    case five = 5, ten = 10, thirty = 30, never = 0
+
+    static let key = "autoStop"
+    var id: Int { rawValue }
+
+    /// The wait, nil for never.
+    var grace: TimeInterval? { self == .never ? nil : TimeInterval(rawValue) * 60 }
+
+    /// The saved choice, 10 minutes until one is made.
+    static func saved(in defaults: UserDefaults = .standard) -> AutoStop {
+        (defaults.object(forKey: key) as? Int).flatMap(AutoStop.init(rawValue:)) ?? .ten
     }
 }

@@ -30,6 +30,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
+        CODE_SIGN_ENTITLEMENTS: Sources/Flux.entitlements
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_CFBundleDisplayName: Flux
@@ -54,9 +55,10 @@ targets:
       properties:
         UIBackgroundModes: [audio]
         NSSupportsLiveActivities: true
+        FluxAppGroup: group.$(APP_BUNDLE_ID) # the widget's data, see Shared/FluxWidgetData.swift
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-  # The Live Activity and the Control Center button. iOS 18 and later, for the control; the app
+  # The home screen widget, the Live Activity and the Control Center button. iOS 18 and later, for the control; the app
   # itself still runs on iOS 17, without them.
   FluxWidgets:
     type: app-extension
@@ -70,6 +72,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).widgets
+        CODE_SIGN_ENTITLEMENTS: Widgets/FluxWidgets.entitlements
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_FILE: Widgets/Info.plist
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) WIDGET_EXTENSION

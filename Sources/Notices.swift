@@ -1,6 +1,7 @@
 import UserNotifications
 
-// The notifications Flux sends: when it goes to sleep, and near the monthly data limit.
+// The notifications Flux sends: when it goes to sleep, when a device connects or leaves, and near
+// the monthly data limit.
 
 /// Says so when Flux goes to sleep. With nothing on the hotspot for 10 minutes the silent sound stops
 /// (see `KeepAlivePolicy`) and iOS suspends Flux, and turning the hotspot on then shares nothing until
@@ -17,17 +18,43 @@ enum SleepNotice {
         }
     }
 
-    /// Right before iOS suspends Flux. Nothing shows if notifications were turned down.
-    static func post() {
+    /// Right before iOS suspends Flux, after `minutes` with no hotspot (Settings > Auto-stop).
+    /// Nothing shows if notifications were turned down.
+    static func post(minutes: Int) {
         let content = UNMutableNotificationContent()
         content.title = String(localized: "Flux is asleep")
-        content.body = String(localized: "No device used the hotspot for 10 minutes, so Flux stopped to save battery. Open Flux or run Start Flux before you turn the hotspot on again.")
+        content.body = String(localized: "No device used the hotspot for \(minutes) minutes, so Flux stopped to save battery. Open Flux or run Start Flux before you turn the hotspot on again.")
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: id, content: content, trigger: nil))
     }
 
     /// Flux is awake again, so the notice no longer applies.
     static func clear() {
         UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [id])
+    }
+}
+
+/// Says when a device connects or leaves while Flux is off the screen, where there's nothing else
+/// to see it by. Settings > Connection alerts turns it off. Quiet: a banner, no sound.
+enum ConnectionNotice {
+    static let key = "connectionNotices"
+
+    static func enabled(in defaults: UserDefaults = .standard) -> Bool {
+        defaults.object(forKey: key) as? Bool ?? true
+    }
+
+    /// One notification per device, so a device that comes back replaces its "disconnected".
+    static func post(device id: String, name: String, connected: Bool) {
+        guard enabled() else { return }
+        let content = UNMutableNotificationContent()
+        if connected {
+            content.title = String(localized: "\(name) connected")
+            content.body = String(localized: "It's using this iPhone's internet through Flux.")
+        } else {
+            content.title = String(localized: "\(name) disconnected")
+            content.body = String(localized: "It's no longer sharing through Flux.")
+        }
+        content.threadIdentifier = "flux.devices"
+        UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "flux.device.\(id)", content: content, trigger: nil))
     }
 }
 

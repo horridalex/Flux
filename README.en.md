@@ -77,7 +77,7 @@ Devices use Cloudflare's DNS (1.1.1.1) unless you choose other servers under Set
 
 ## Start it from Shortcuts
 
-Once no device has been on the hotspot for 10 minutes, iOS suspends Flux, and it has to be opened again before the hotspot comes back. Shortcuts can do that for you. Flux adds two actions to the Shortcuts app, with nothing to set up:
+Once no device has been on the hotspot for 10 minutes (Settings > Auto-stop changes it), iOS suspends Flux, and it has to be opened again before the hotspot comes back. Shortcuts can do that for you. Flux adds two actions to the Shortcuts app, with nothing to set up:
 
 - **Start Flux** wakes Flux in the background, the same as opening it, but it stays off the screen. It shares as soon as a device joins Personal Hotspot in the next 10 minutes. (iOS only makes the hotspot's network while a device is on it, so that's when Flux can see it.)
 - **Is Flux Sharing?** says whether Flux is sharing and how many devices are connected. It gives true or false, for an If.
@@ -99,6 +99,9 @@ iOS has no automation for "Personal Hotspot turned on", so let one shortcut turn
 - **The main screen** shows how many devices are connected, the current download and upload speed, how much was used today (History shows the month), your devices with Connected or Not connected, and the button to connect a new one. A device's own screen shows what it used today, and a travel router's includes every device behind it. Today's figures start again at midnight. To stop sharing, turn off Personal Hotspot.
 - **In English and Korean**, following the iPhone's language.
 - **Light or dark**: Settings > Appearance on the main screen picks Automatic (the iPhone's own setting, the default), Light or Dark.
+- **Auto-stop**: Settings > Auto-stop picks how long Flux waits with no hotspot before it stops: 5, 10 (the default) or 30 minutes, or Never. Never saves opening Flux again, and costs more battery.
+- **Connection alerts**: while Flux is off the screen, a quiet notification says when a device connects or leaves. Settings > Connection alerts turns them off.
+- **Widget**: put the Flux widget on the home screen or the Lock Screen for whether it's sharing, the devices connected, the data used today and this month, and the monthly limit. The widget gets its data through an App Group (`group.<bundle ID>`): if the provisioning profile you sign with has no App Group, the widget only says to open Flux, and the rest of the app works as before.
 - **The traffic leaves as your iPhone's.** If your iPhone runs a VPN, shared traffic goes through that VPN too.
 - **Your carrier can still notice.** Flux hides where the traffic comes from, not what it is. A Mac's software updates or an iPad's apps still look like a Mac or an iPad to a carrier that looks closely. Many carrier contracts don't allow tethering workarounds, and a carrier can slow down or close a line that breaks them. Check yours. Using Flux is your call and your risk.
 - **Not for the App Store.** Apple doesn't allow the silent-audio trick, so you build and install Flux yourself.

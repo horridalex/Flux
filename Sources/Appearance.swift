@@ -61,3 +61,49 @@ struct AppearanceView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 }
+
+extension AutoStop {
+    var title: LocalizedStringKey {
+        switch self {
+        case .five: "5 minutes"
+        case .ten: "10 minutes"
+        case .thirty: "30 minutes"
+        case .never: "Never"
+        }
+    }
+}
+
+/// Settings > Auto-stop: how long Flux waits with no hotspot before it stops, see `AutoStop`.
+struct AutoStopView: View {
+    @AppStorage(AutoStop.key) private var autoStop: AutoStop = .ten
+
+    var body: some View {
+        List {
+            Section {
+                ForEach(AutoStop.allCases) { choice in
+                    Button {
+                        autoStop = choice
+                    } label: {
+                        HStack {
+                            Text(choice.title).foregroundStyle(Color.primary)
+                            Spacer()
+                            if autoStop == choice {
+                                Image(systemName: "checkmark")
+                                    .font(.body.weight(.semibold))
+                                    .foregroundStyle(Brand.accent)
+                            }
+                        }
+                    }
+                    .accessibilityAddTraits(autoStop == choice ? .isSelected : [])
+                    .accessibilityIdentifier("autoStop.\(choice.rawValue)")
+                }
+            } footer: {
+                Text(autoStop == .never ? "Never stopping uses more battery." : "With no hotspot for this long, Flux stops to save battery.")
+            }
+            .listRowBackground(Brand.card)
+        }
+        .pageList()
+        .navigationTitle("Auto-stop")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}

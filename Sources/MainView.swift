@@ -3,6 +3,8 @@ import SwiftUI
 struct MainView: View {
     @ObservedObject private var model = Model.shared
     @AppStorage(Appearance.key) private var appearance: Appearance = .automatic
+    @AppStorage(AutoStop.key) private var autoStop: AutoStop = .ten
+    @AppStorage(ConnectionNotice.key) private var connectionNotices = true
 
     var body: some View {
         NavigationStack {
@@ -69,6 +71,24 @@ struct MainView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("settings.dns")
+                        NavigationLink { AutoStopView() } label: {
+                            SettingRow(icon: "moon.zzz", title: "Auto-stop") {
+                                Text(autoStop.title)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("settings.autoStop")
+                        Toggle(isOn: $connectionNotices) {
+                            HStack(spacing: 14) {
+                                IconTile(systemName: "bell", color: Brand.subtext, size: 40)
+                                Text("Connection alerts")
+                                    .font(.body.weight(.semibold))
+                            }
+                        }
+                        .tint(Brand.action)
+                        .padding(.vertical, 8)
+                        .onChange(of: connectionNotices) { _, on in if on { SleepNotice.askOnce() } }
+                        .accessibilityIdentifier("settings.connectionNotices")
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
