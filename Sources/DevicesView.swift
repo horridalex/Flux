@@ -232,7 +232,7 @@ struct DeviceView: View {
 }
 
 /// "Connected" or "Not connected". The text keeps the normal colours, since green text on the
-/// grouped background fails the contrast audit. The icon carries the green.
+/// grouped background fails the contrast audit. The icon carries the blue.
 struct ConnectedLabel: View {
     let connected: Bool
 
@@ -242,7 +242,7 @@ struct ConnectedLabel: View {
                 .foregroundStyle(connected ? .primary : .secondary)
         } icon: {
             Image(systemName: connected ? "checkmark.circle.fill" : "circle.dashed")
-                .foregroundStyle(connected ? .green : .secondary)
+                .foregroundStyle(connected ? Brand.accent : .secondary)
         }
     }
 }

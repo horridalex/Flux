@@ -278,7 +278,7 @@ enum Direction {
 struct StatusCard: View {
     @ObservedObject var model: Model
 
-    private var tint: Color { model.sharing ? .green : .orange }
+    private var tint: Color { model.sharing ? Brand.accent : .orange }
     private var sharing: Bool { model.sharing }
 
 

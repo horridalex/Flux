@@ -190,7 +190,7 @@ private struct StatusWidgetView: View {
     private func status(_ data: FluxWidgetData) -> some View {
         HStack(spacing: 6) {
             Circle()
-                .fill(data.sharing ? Color.green : Color.orange)
+                .fill(data.sharing ? Brand.accent : Color.orange)
                 .frame(width: 8, height: 8)
             Text(data.sharing ? devicesText(data.devices) : "Not sharing")
                 .font(.headline.weight(.heavy))
