@@ -150,7 +150,7 @@
 
 /* The card while the hotspot is off. */
 "Hotspot is off" = "핫스팟 꺼짐";
-"Turn on Allow Others to Join" = "'다른 사람의 연결 허용'을 켜 주세요";
+"Turn on Allow Others to Join" = "'다른 사람의 연결 허용' 켜기";
 "Open Settings" = "설정 열기";
 
 /* Sleep notice, with the minutes chosen in Settings > Auto-stop. */
