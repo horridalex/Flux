@@ -45,14 +45,6 @@ final class ScreenshotTests: FluxUITestCase {
         shoot("add-dark")
     }
 
-    func testUsage() {
-        launch(.sharing, arguments: ["-FluxAppearance", "dark"], korean: true)
-        reveal(element("usage.today")).tap()
-        XCTAssertTrue(element("usage.chart").waitForExistence(timeout: 5))
-        settle()
-        shoot("usage-dark")
-    }
-
     func testDevice() {
         launch(.sharing, arguments: ["-FluxAppearance", "dark"], korean: true)
         reveal(element("device.iPad")).tap()

@@ -17,9 +17,9 @@ enum KeepAlivePolicy {
     }
 
     /// The hotspot is watched every 5 seconds on screen, where starting at once shows. In the
-    /// background a device that joins waits a little longer, and Flux wakes a third as often.
+    /// background a device that joins waits a little longer, and Flux wakes a sixth as often.
     static func watchInterval(sceneActive: Bool) -> (every: Duration, tolerance: Duration) {
-        sceneActive ? (.seconds(5), .seconds(1)) : (.seconds(15), .seconds(5))
+        sceneActive ? (.seconds(5), .seconds(1)) : (.seconds(30), .seconds(10))
     }
 }
 
@@ -34,8 +34,8 @@ enum AutoStop: Int, CaseIterable, Identifiable {
     /// The wait, nil for never.
     var grace: TimeInterval? { self == .never ? nil : TimeInterval(rawValue) * 60 }
 
-    /// The saved choice, 10 minutes until one is made.
+    /// The saved choice, 5 minutes until one is made: the least battery for the common case.
     static func saved(in defaults: UserDefaults = .standard) -> AutoStop {
-        (defaults.object(forKey: key) as? Int).flatMap(AutoStop.init(rawValue:)) ?? .ten
+        (defaults.object(forKey: key) as? Int).flatMap(AutoStop.init(rawValue:)) ?? .five
     }
 }

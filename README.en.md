@@ -8,7 +8,7 @@ Share your iPhone's internet with your iPad, Mac or travel router, even when you
 
 <img src="Sources/Assets.xcassets/AppIcon.appiconset/icon-1024.png" width="96" alt="Flux icon">
 
-<img src="docs/main-dark.png" width="200" alt="Flux sharing with an iPad: the speed, today's usage, the devices and the button to connect a new one"> <img src="docs/main-light.png" width="200" alt="The same screen in light mode"> <img src="docs/usage-dark.png" width="200" alt="This month's usage, a 30-day chart and each day's total"> <img src="docs/device-dark.png" width="200" alt="A device's screen: connected, its speed, its usage today, and its QR code to set it up again"> <img src="docs/add-dark.png" width="200" alt="Connecting a new device: with a QR code, with a file, and turning it on by itself">
+<img src="docs/main-dark.png" width="200" alt="Flux sharing with an iPad: the speed, today's usage, the devices and the button to connect a new one"> <img src="docs/main-light.png" width="200" alt="The same screen in light mode"> <img src="docs/device-dark.png" width="200" alt="A device's screen: connected, its speed, its usage today, and its QR code to set it up again"> <img src="docs/add-dark.png" width="200" alt="Connecting a new device: with a QR code, with a file, and turning it on by itself">
 
 The screenshots come from Actions > Screenshots, which takes them from the demo scenarios.
 
@@ -77,9 +77,9 @@ Devices use Cloudflare's DNS (1.1.1.1) unless you choose other servers under Set
 
 ## Start it from Shortcuts
 
-Once no device has been on the hotspot for 10 minutes (Settings > Auto-stop changes it), iOS suspends Flux, and it has to be opened again before the hotspot comes back. Shortcuts can do that for you. Flux adds two actions to the Shortcuts app, with nothing to set up:
+Once no device has been on the hotspot for 5 minutes (Settings > Auto-stop changes it), iOS suspends Flux, and it has to be opened again before the hotspot comes back. Shortcuts can do that for you. Flux adds two actions to the Shortcuts app, with nothing to set up:
 
-- **Start Flux** wakes Flux in the background, the same as opening it, but it stays off the screen. It shares as soon as a device joins Personal Hotspot in the next 10 minutes. (iOS only makes the hotspot's network while a device is on it, so that's when Flux can see it.)
+- **Start Flux** wakes Flux in the background, the same as opening it, but it stays off the screen. It shares as soon as a device joins Personal Hotspot within the Auto-stop time. (iOS only makes the hotspot's network while a device is on it, so that's when Flux can see it.)
 - **Is Flux Sharing?** says whether Flux is sharing and how many devices are connected. It gives true or false, for an If.
 
 You can also say "Start Flux" to Siri, find it in Spotlight, or put it on the Action button.
@@ -93,15 +93,13 @@ iOS has no automation for "Personal Hotspot turned on", so let one shortcut turn
 ## Good to know
 
 - **It stops opening when its certificate expires**: after 7 days with a free Apple ID, or when your own certificate does. Flux says on its main screen when it has three days or less left. Build and install it again before then, with the same bundle ID. Your devices and settings stay.
-- **Keep it running.** Flux plays silent audio so iOS doesn't suspend it in the background. It mixes with other audio, so your music keeps playing, and it picks up again after a call or Siri. With no device on the hotspot for 10 minutes it stops, to save battery, and iOS suspends Flux. Open it again, or run Start Flux, before you turn the hotspot back on, and after a restart.
+- **Keep it running.** Flux plays silent audio so iOS doesn't suspend it in the background. It mixes with other audio, so your music keeps playing, and it picks up again after a call or Siri. With no device on the hotspot for the Auto-stop time (5 minutes unless you change it) it stops, to save battery, and iOS suspends Flux. Open it again, or run Start Flux, before you turn the hotspot back on, and after a restart.
 - **It only listens on the hotspot**, never on other Wi-Fi networks. WireGuard only lets in devices you added.
 - **Devices reach what the iPhone reaches**, private networks included. With a VPN on the iPhone, your devices use it too, so its networks are open to them and to everyone behind a travel router you added.
-- **The main screen** shows how many devices are connected, the current download and upload speed, how much was used today (History shows the month), your devices with Connected or Not connected, and the button to connect a new one. A device's own screen shows what it used today, and a travel router's includes every device behind it. Today's figures start again at midnight. To stop sharing, turn off Personal Hotspot.
+- **The main screen** shows how many devices are connected, the current download and upload speed, how much was used today, your devices with Connected or Not connected, and the button to connect a new one. A device's own screen shows what it used today, and a travel router's includes every device behind it. Today's figures start again at midnight. To stop sharing, turn off Personal Hotspot.
 - **In English and Korean**, following the iPhone's language.
 - **Light or dark**: Settings > Appearance on the main screen picks Automatic (the iPhone's own setting, the default), Light or Dark.
-- **Auto-stop**: Settings > Auto-stop picks how long Flux waits with no hotspot before it stops: 5, 10 (the default) or 30 minutes, or Never. Never saves opening Flux again, and costs more battery.
-- **Connection alerts**: while Flux is off the screen, a quiet notification says when a device connects or leaves. Settings > Connection alerts turns them off.
-- **Widget**: put the Flux widget on the home screen or the Lock Screen for whether it's sharing, the devices connected, the data used today and this month, and the monthly limit. The widget gets its data through an App Group (`group.<bundle ID>`): if the provisioning profile you sign with has no App Group, the widget only says to open Flux, and the rest of the app works as before.
+- **Auto-stop**: Settings > Auto-stop picks how long Flux waits with no hotspot before it stops: 5 (the default), 10 or 30 minutes, or Never. Never saves opening Flux again, and costs more battery.
 - **The traffic leaves as your iPhone's.** If your iPhone runs a VPN, shared traffic goes through that VPN too.
 - **Your carrier can still notice.** Flux hides where the traffic comes from, not what it is. A Mac's software updates or an iPad's apps still look like a Mac or an iPad to a carrier that looks closely. Many carrier contracts don't allow tethering workarounds, and a carrier can slow down or close a line that breaks them. Check yours. Using Flux is your call and your risk.
 - **Not for the App Store.** Apple doesn't allow the silent-audio trick, so you build and install Flux yourself.

@@ -19,7 +19,7 @@ final class KeepAlivePolicyTests: XCTestCase {
 
     func testABackgroundWakeIsRarerThanOnScreen() {
         XCTAssertEqual(KeepAlivePolicy.watchInterval(sceneActive: true).every, .seconds(5))
-        XCTAssertEqual(KeepAlivePolicy.watchInterval(sceneActive: false).every, .seconds(15))
+        XCTAssertEqual(KeepAlivePolicy.watchInterval(sceneActive: false).every, .seconds(30))
     }
 
     func testTheChosenWaitAndNever() {
@@ -29,12 +29,12 @@ final class KeepAlivePolicyTests: XCTestCase {
         XCTAssertTrue(KeepAlivePolicy.plays(waitingSince: start, now: start.addingTimeInterval(8 * 3600), grace: AutoStop.never.grace))
     }
 
-    func testTheSavedChoiceIsTenMinutesUntilOneIsMade() {
+    func testTheSavedChoiceIsFiveMinutesUntilOneIsMade() {
         let defaults = UserDefaults(suiteName: "autostop-\(UUID())")!
-        XCTAssertEqual(AutoStop.saved(in: defaults), .ten)
+        XCTAssertEqual(AutoStop.saved(in: defaults), .five)
         defaults.set(0, forKey: AutoStop.key)
         XCTAssertEqual(AutoStop.saved(in: defaults), .never)
         defaults.set(7, forKey: AutoStop.key)
-        XCTAssertEqual(AutoStop.saved(in: defaults), .ten, "an unknown value falls back")
+        XCTAssertEqual(AutoStop.saved(in: defaults), .five, "an unknown value falls back")
     }
 }
