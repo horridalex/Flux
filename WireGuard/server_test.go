@@ -524,6 +524,31 @@ func TestADeviceIsConnectedUntilItsHandshakeIsOld(t *testing.T) {
 	}
 }
 
+// A device whose tunnel went down stops sending keepalives: it shows as gone after quietWithin, long
+// before its last handshake is old, and comes back with its next packet.
+func TestADeviceThatGoesQuietIsNotConnected(t *testing.T) {
+	s, c := setup(t)
+	fetchAndShake(t, s, c, tcpServer(t, 1000))
+	if st := s.Stats(); len(st.Connected) != 1 {
+		t.Fatalf("connected %v, want the device", st.Connected)
+	}
+	later := time.Now().Add(quietWithin + 5*time.Second)
+	s.mu.Lock()
+	s.now = func() time.Time { return later }
+	s.mu.Unlock()
+	s.readHandshakes() // nothing new from the device
+	if st := s.Stats(); len(st.Connected) != 0 {
+		t.Fatalf("connected %v after %v of nothing, want none", st.Connected, quietWithin)
+	}
+	if _, err := fetch(t, c, tcpServer(t, 10)); err != nil {
+		t.Fatal(err)
+	}
+	s.readHandshakes()
+	if st := s.Stats(); len(st.Connected) != 1 {
+		t.Fatalf("connected %v after the device sent again, want it back", st.Connected)
+	}
+}
+
 func TestARemovedDeviceIsNotConnected(t *testing.T) {
 	s, c := setup(t)
 	fetchAndShake(t, s, c, tcpServer(t, 1000))

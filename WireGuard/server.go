@@ -67,6 +67,10 @@ const (
 	// WireGuard makes a new one every 2 minutes while packets flow, and the client config's
 	// PersistentKeepalive keeps them flowing on an idle tunnel.
 	onlineWithin = 3 * time.Minute
+	// quietWithin is how long a device may send nothing and still count as online. The client
+	// config's PersistentKeepalive of 25 seconds sends a packet at least that often while the tunnel
+	// is up, so three missed ones mean it's gone: about a minute, not the handshake's three.
+	quietWithin = 75 * time.Second
 )
 
 func init() {
@@ -173,6 +177,8 @@ type Server struct {
 	refused      netip.Addr
 	refusedAt    time.Time
 	shaken       map[netip.Addr]time.Time              // tunnel address -> when its last handshake was
+	heard        map[netip.Addr]time.Time              // tunnel address -> when it last sent anything, see quietWithin
+	received     map[[32]byte]uint64                   // each peer's rx_bytes at the last status read
 	flows        map[netip.Addr]map[io.Closer]struct{} // open connections, to close a removed device's
 	cones        map[netip.AddrPort]*cone              // UDP, by device port, see udp.go
 	maxCones     int                                   // see the constant. Tests lower it
@@ -457,7 +463,11 @@ func (s *Server) Stats() Stats {
 	defer s.mu.Unlock()
 	st := Stats{Up: s.up.Load(), Down: s.down.Load(), Connected: []string{}, Devices: map[string]Bytes{}}
 	for addr, at := range s.shaken {
-		if s.now().Sub(at) < onlineWithin {
+		heard, ok := s.heard[addr]
+		if !ok || at.After(heard) {
+			heard = at
+		}
+		if s.now().Sub(at) < onlineWithin && s.now().Sub(heard) < quietWithin {
 			st.Connected = append(st.Connected, addr.String())
 		}
 	}
@@ -501,6 +511,7 @@ func (s *Server) readHandshakes() {
 		return
 	}
 	handshakes := map[[32]byte]time.Time{}
+	received := map[[32]byte]uint64{}
 	var key [32]byte
 	sc := bufio.NewScanner(strings.NewReader(status))
 	for sc.Scan() {
@@ -514,17 +525,31 @@ func (s *Server) readHandshakes() {
 			if sec, err := strconv.ParseInt(v, 10, 64); err == nil && sec > 0 {
 				handshakes[key] = time.Unix(sec, 0)
 			}
+		case "rx_bytes":
+			// Grows with every packet from the device, its keepalives included.
+			if n, err := strconv.ParseUint(v, 10, 64); err == nil {
+				received[key] = n
+			}
 		}
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	shaken := map[netip.Addr]time.Time{}
+	heard := map[netip.Addr]time.Time{}
 	for key, addr := range s.peers {
 		if at, ok := handshakes[key]; ok {
 			shaken[addr] = at
 		}
+		if when, ok := s.heard[addr]; ok {
+			heard[addr] = when
+		}
+		if n, ok := received[key]; ok && n != s.received[key] {
+			heard[addr] = s.now()
+		}
 	}
 	s.shaken = shaken
+	s.heard = heard
+	s.received = received
 }
 
 // forwardable says whether a device may reach dst through the iPhone. The iPhone's own loopback,
