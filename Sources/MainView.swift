@@ -312,6 +312,20 @@ struct StatusCard: View {
         return model.running ? "Flux can't share yet" : "Turn on Personal Hotspot"
     }
 
+    private var hotspotHint: some View {
+        Text("Turn on Allow Others to Join")
+            .font(.subheadline)
+            .foregroundStyle(Brand.subtext)
+            .lineLimit(1)
+            .accessibilityIdentifier("status.hotspotPath")
+    }
+
+    private var openSettingsButton: some View {
+        Button("Open Settings", action: Self.openHotspotSettings)
+            .buttonStyle(ActionButtonStyle())
+            .accessibilityIdentifier("status.openSettings")
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             // Always there, so it never fades in or out with the card's animation: a contrast check
@@ -348,18 +362,19 @@ struct StatusCard: View {
                     .font(.title2.weight(.heavy))
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("status.title")
-                Text("Turn on Allow Others to Join")
-                    .font(.subheadline)
-                    .foregroundStyle(Brand.subtext)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-                    .accessibilityIdentifier("status.hotspotPath")
-                // On the right, where the other cards keep their buttons.
-                Button("Open Settings", action: Self.openHotspotSettings)
-                    .buttonStyle(ActionButtonStyle())
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .padding(.top, 4)
-                    .accessibilityIdentifier("status.openSettings")
+                // The grey line with the button on its right, like the other cards' rows. With
+                // large text the two don't fit side by side, and the button goes under the line.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 12) {
+                        hotspotHint.fixedSize()
+                        Spacer(minLength: 0)
+                        openSettingsButton
+                    }
+                    VStack(alignment: .leading, spacing: 12) {
+                        hotspotHint.minimumScaleFactor(0.85)
+                        openSettingsButton
+                    }
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
