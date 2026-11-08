@@ -354,8 +354,10 @@ struct StatusCard: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
                     .accessibilityIdentifier("status.hotspotPath")
+                // On the right, where the other cards keep their buttons.
                 Button("Open Settings", action: Self.openHotspotSettings)
                     .buttonStyle(ActionButtonStyle())
+                    .frame(maxWidth: .infinity, alignment: .trailing)
                     .padding(.top, 4)
                     .accessibilityIdentifier("status.openSettings")
             }
