@@ -7,7 +7,7 @@ final class NormalLaunchTests: FluxUITestCase {
     func testWaitsForPersonalHotspotOnTheSimulator() {
         launch(nil)
         XCTAssertEqual(label(of: "status.title"), "Turn on Personal Hotspot")
-        XCTAssertEqual(label(of: "status.hotspotPath"), "Settings > Personal Hotspot > Allow Others to Join")
+        XCTAssertEqual(label(of: "status.hotspotPath"), "Turn on Allow Others to Join")
         XCTAssertFalse(element("status.headline").exists)
         XCTAssertFalse(element("traffic.speeds").exists)
     }

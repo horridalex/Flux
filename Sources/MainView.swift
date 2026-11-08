@@ -13,7 +13,7 @@ struct MainView: View {
                     StatusCard(model: model)
 
                     if let warning = model.expiryWarning {
-                        Tile(tint: .orange) {
+                        Tile {
                             Label {
                                 Text(warning)
                             } icon: {
@@ -294,14 +294,16 @@ struct StatusCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(tint)
-                    .frame(width: 10, height: 10)
-                    .accessibilityHidden(true)
-                Text(title)
-                    .font(.subheadline.weight(.semibold)) // the primary colour: grey failed on the orange card
-                    .accessibilityIdentifier("status.title")
+            if sharing || model.running {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(tint)
+                        .frame(width: 10, height: 10)
+                        .accessibilityHidden(true)
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                        .accessibilityIdentifier("status.title")
+                }
             }
             if sharing {
                 Text(headlineHighlighted)
@@ -320,20 +322,35 @@ struct StatusCard: View {
                     .font(.title3.weight(.heavy))
                     .accessibilityIdentifier("status.headline")
             } else {
-                Button(action: Self.openHotspotSettings) {
-                    Text("Settings > Personal Hotspot > Allow Others to Join")
+                // Like the sharing card: a small line with its dot, the sentence, one grey line, and
+                // the button that does it.
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(tint)
+                        .frame(width: 10, height: 10)
+                        .accessibilityHidden(true)
+                    Text("Hotspot is off")
                         .font(.subheadline.weight(.semibold))
-                        .underline()
-                        .multilineTextAlignment(.leading)
-                        .foregroundStyle(Color.primary) // inside a button, .primary is the button's tint
                 }
-                .accessibilityIdentifier("status.hotspotPath")
-                .accessibilityHint("Opens Settings")
+                Text(title)
+                    .font(.title2.weight(.heavy))
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("status.title")
+                Text("Turn on Allow Others to Join")
+                    .font(.subheadline)
+                    .foregroundStyle(Brand.subtext)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                    .accessibilityIdentifier("status.hotspotPath")
+                Button("Open Settings", action: Self.openHotspotSettings)
+                    .buttonStyle(ActionButtonStyle())
+                    .padding(.top, 4)
+                    .accessibilityIdentifier("status.openSettings")
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(24)
-        .card(tint: sharing ? nil : .orange)
+        .card()
         .animation(.smooth, value: sharing)
     }
 }

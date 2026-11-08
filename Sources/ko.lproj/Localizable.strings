@@ -148,3 +148,8 @@
 "Show it only to this device" = "이 기기에만 보여 주세요";
 "Scan it on this device" = "이 기기에서 코드 스캔";
 "Delete the old tunnel in WireGuard" = "WireGuard에서 예전 터널 삭제";
+
+/* The card while the hotspot is off. */
+"Hotspot is off" = "핫스팟 꺼짐";
+"Turn on Allow Others to Join" = "'다른 사람의 연결 허용'을 켜 주세요";
+"Open Settings" = "설정 열기";
