@@ -13,7 +13,7 @@ private func dynamic(light: (CGFloat, CGFloat, CGFloat), dark: (CGFloat, CGFloat
     })
 }
 
-/// The brand's colours. The sweep stays for the Live Activity and the widgets.
+/// The brand's colours.
 enum Brand {
     static let cyan = Color(red: 0.35, green: 0.90, blue: 1.00)
     static let blue = Color(red: 0.30, green: 0.55, blue: 1.00)

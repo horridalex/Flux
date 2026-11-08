@@ -2,10 +2,11 @@ import ActivityKit
 import AppIntents
 import Foundation
 
-// Compiled into both the app and the widget extension (Widgets/): what the Live Activity shows,
-// and the intent behind the Control Center button.
+// Compiled into both the app and the widget extension (Widgets/): the intent behind the Control
+// Center button, and the type of the Live Activity Flux 1.4.1 and before showed, so the app can end
+// one that's left (LiveActivityController.swift).
 
-/// The Live Activity while Flux shares: on the Lock Screen and in the Dynamic Island.
+/// The old Live Activity's type. Nothing shows it any more.
 struct FluxActivityAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
         /// Devices connected now.

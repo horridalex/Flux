@@ -1,8 +1,3 @@
-/* The Live Activity and the Control Center button, in Korean. */
+/* The Control Center button, in Korean. */
 "Start Flux" = "Flux 시작";
 "Wakes Flux, so it shares when a device joins Personal Hotspot." = "기기가 개인용 핫스팟에 연결되면 공유하도록 Flux를 깨웁니다.";
-"Flux is sharing" = "Flux 공유 중";
-"1 device" = "기기 1대";
-"%lld devices" = "기기 %lld대";
-"Used today: %@" = "오늘 사용량: %@";
-

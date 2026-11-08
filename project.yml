@@ -53,10 +53,9 @@ targets:
       path: Sources/Info.plist
       properties:
         UIBackgroundModes: [audio]
-        NSSupportsLiveActivities: true
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-  # The Live Activity and the Control Center button. iOS 18 and later, for the control; the app
+  # The Control Center button. iOS 18 and later, for the control; the app
   # itself still runs on iOS 17, without them.
   FluxWidgets:
     type: app-extension
