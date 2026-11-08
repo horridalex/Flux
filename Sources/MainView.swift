@@ -314,16 +314,16 @@ struct StatusCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if sharing || model.running {
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(tint)
-                        .frame(width: 10, height: 10)
-                        .accessibilityHidden(true)
-                    Text(title)
-                        .font(.subheadline.weight(.semibold))
-                        .accessibilityIdentifier("status.title")
-                }
+            // Always there, so it never fades in or out with the card's animation: a contrast check
+            // that lands mid-fade fails.
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(tint)
+                    .frame(width: 10, height: 10)
+                    .accessibilityHidden(true)
+                Text(sharing || model.running ? title : "Hotspot is off")
+                    .font(.subheadline.weight(.semibold))
+                    .accessibilityIdentifier(sharing || model.running ? "status.title" : "status.state")
             }
             if sharing {
                 Text(headlineHighlighted)
@@ -342,16 +342,8 @@ struct StatusCard: View {
                     .font(.title3.weight(.heavy))
                     .accessibilityIdentifier("status.headline")
             } else {
-                // Like the sharing card: a small line with its dot, the sentence, one grey line, and
-                // the button that does it.
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(tint)
-                        .frame(width: 10, height: 10)
-                        .accessibilityHidden(true)
-                    Text("Hotspot is off")
-                        .font(.subheadline.weight(.semibold))
-                }
+                // Like the sharing card: the small line with its dot above, the sentence, one grey
+                // line, and the button that does it.
                 Text(title)
                     .font(.title2.weight(.heavy))
                     .accessibilityAddTraits(.isHeader)
